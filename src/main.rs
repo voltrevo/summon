@@ -14,7 +14,9 @@ use handle_diagnostics_cli::handle_diagnostics_cli;
 use id_generator::IdGenerator;
 use num_traits::ToPrimitive;
 use resolve_entry_path::resolve_entry_path;
-use valuescript_compiler::{assemble, compile};
+use serde::Serialize;
+use serde_json::to_string_pretty;
+use valuescript_compiler::{asm, assemble, compile};
 use valuescript_vm::{
   vs_value::{ToDynamicVal, Val},
   Bytecode, DecoderMaker, ValTrait, VirtualMachine,
@@ -29,13 +31,14 @@ mod resolve_entry_path;
 fn main() {
   let args: Vec<String> = std::env::args().collect();
 
-  let main = get_cli_default_export(&args);
+  let (name, fn_, main) = get_cli_default_export(&args);
   let (input_len, outputs) = run(&args, main);
 
-  generate_circuit(input_len, outputs);
+  let (output_ids, constants) = generate_circuit(input_len, outputs);
+  generate_circuit_info(name, fn_, output_ids, constants);
 }
 
-fn get_cli_default_export(args: &Vec<String>) -> Val {
+fn get_cli_default_export(args: &Vec<String>) -> (String, asm::Function, Val) {
   if args.len() != 2 {
     exit_command_failed(args, None, &format!("Usage: {} <main file>", args[0]));
   }
@@ -50,13 +53,17 @@ fn get_cli_default_export(args: &Vec<String>) -> Val {
     handle_diagnostics_cli(&path.path, diagnostics);
   }
 
-  let bytecode = Rc::new(Bytecode::new(assemble(
-    &compile_result
-      .module
-      .expect("Should have exited if module is None"),
-  )));
+  let module = compile_result
+    .module
+    .expect("Should have exited if module is None");
 
-  bytecode.decoder(0).decode_val(&mut vec![])
+  let (name, asm_fn) = get_asm_main(&module);
+
+  let bytecode = Rc::new(Bytecode::new(assemble(&module)));
+
+  let val = bytecode.decoder(0).decode_val(&mut vec![]);
+
+  (name.clone(), asm_fn.clone(), val)
 }
 
 fn run(args: &[String], main: Val) -> (usize, Vec<Val>) {
@@ -78,10 +85,7 @@ fn run(args: &[String], main: Val) -> (usize, Vec<Val>) {
 
   match res {
     Ok(Val::Array(vs_array)) => (param_count, vs_array.elements.clone()),
-    Ok(_) => {
-      eprintln!("Non-array result");
-      std::process::exit(1);
-    }
+    Ok(val) => (param_count, vec![val]),
     Err(err) => {
       eprintln!("Uncaught exception: {}", err.pretty());
       std::process::exit(1);
@@ -89,7 +93,7 @@ fn run(args: &[String], main: Val) -> (usize, Vec<Val>) {
   }
 }
 
-fn generate_circuit(input_len: usize, outputs: Vec<Val>) {
+fn generate_circuit(input_len: usize, outputs: Vec<Val>) -> (Vec<usize>, HashMap<usize, usize>) {
   let output_dir = Path::new("output");
 
   if output_dir.exists() {
@@ -100,7 +104,7 @@ fn generate_circuit(input_len: usize, outputs: Vec<Val>) {
 
   let mut builder = CircuitBuilder::default();
   builder.include_inputs(input_len);
-  builder.include_outputs(&outputs);
+  let output_ids = builder.include_outputs(&outputs);
 
   let mut circuit_txt = File::create("output/circuit.txt").unwrap();
 
@@ -132,6 +136,8 @@ fn generate_circuit(input_len: usize, outputs: Vec<Val>) {
   for gate in builder.gates {
     writeln!(circuit_txt, "{}", gate).unwrap();
   }
+
+  (output_ids, builder.constants)
 }
 
 #[derive(Default)]
@@ -151,16 +157,20 @@ impl CircuitBuilder {
     self.wire_count = input_len;
   }
 
-  pub fn include_outputs(&mut self, outputs: &Vec<Val>) {
+  pub fn include_outputs(&mut self, outputs: &Vec<Val>) -> Vec<usize> {
     for output in outputs {
       for dep in get_dependencies(output) {
         self.include_val(&dep);
       }
     }
 
+    let mut output_ids = vec![];
+
     for output in outputs {
-      self.include_val(output);
+      output_ids.push(self.include_val(output));
     }
+
+    output_ids
   }
 
   pub fn include_val(&mut self, val: &Val) -> usize {
@@ -235,4 +245,92 @@ fn get_dependencies(val: &Val) -> Vec<Val> {
   }
 
   vec![]
+}
+
+fn get_asm_main(module: &asm::Module) -> (&String, &asm::Function) {
+  let main_ptr = match &module.export_default {
+    asm::Value::Pointer(ptr) => ptr,
+    _ => panic!("Expected pointer"),
+  };
+
+  let fn_ = match resolve_ptr(module, main_ptr).unwrap() {
+    asm::DefinitionContent::Function(fn_) => fn_,
+    _ => panic!("Expected function"),
+  };
+
+  let meta = match resolve_ptr(module, fn_.meta.as_ref().unwrap()).unwrap() {
+    asm::DefinitionContent::Meta(meta) => meta,
+    _ => panic!("Expected meta"),
+  };
+
+  (&meta.name, fn_)
+}
+
+fn resolve_ptr<'a>(
+  module: &'a asm::Module,
+  ptr: &asm::Pointer,
+) -> Option<&'a asm::DefinitionContent> {
+  for defn in &module.definitions {
+    if &defn.pointer == ptr {
+      return Some(&defn.content);
+    }
+  }
+
+  None
+}
+
+fn generate_circuit_info(
+  name: String,
+  fn_: asm::Function,
+  output_ids: Vec<usize>,
+  constants: HashMap<usize, usize>,
+) {
+  let mut circuit_info = CircuitInfo::default();
+
+  for (i, reg) in fn_.parameters.iter().enumerate() {
+    circuit_info
+      .input_name_to_wire_index
+      .insert(reg.name.clone(), i);
+  }
+
+  for (value, wire_id) in constants {
+    circuit_info.constants.insert(
+      format!("constant_{}", value),
+      ConstantInfo {
+        value: value.to_string(),
+        wire_index: wire_id,
+      },
+    );
+  }
+
+  if output_ids.len() == 1 {
+    circuit_info
+      .output_name_to_wire_index
+      .insert(name, output_ids[0]);
+  } else {
+    for (i, output_id) in output_ids.iter().enumerate() {
+      circuit_info
+        .output_name_to_wire_index
+        .insert(format!("{}[{}]", name, i), *output_id);
+    }
+  }
+
+  fs::write(
+    "output/circuit_info.json",
+    to_string_pretty(&circuit_info).unwrap(),
+  )
+  .unwrap();
+}
+
+#[derive(Default, Serialize)]
+struct CircuitInfo {
+  input_name_to_wire_index: HashMap<String, usize>,
+  constants: HashMap<String, ConstantInfo>,
+  output_name_to_wire_index: HashMap<String, usize>,
+}
+
+#[derive(Serialize)]
+struct ConstantInfo {
+  value: String,
+  wire_index: usize,
 }
