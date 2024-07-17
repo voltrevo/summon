@@ -98,6 +98,36 @@ impl ValTrait for CircuitNumber {
       return None;
     }
 
+    match op {
+      BinaryOp::Plus => {
+        if let Val::Number(left) = left {
+          if *left == 0.0 {
+            return Some(Ok(right.clone()));
+          }
+        }
+
+        if let Val::Number(right) = right {
+          if *right == 0.0 {
+            return Some(Ok(left.clone()));
+          }
+        }
+      }
+      BinaryOp::Mul => {
+        if let Val::Number(left) = left {
+          if *left == 1.0 {
+            return Some(Ok(right.clone()));
+          }
+        }
+
+        if let Val::Number(right) = right {
+          if *right == 1.0 {
+            return Some(Ok(left.clone()));
+          }
+        }
+      }
+      _ => {}
+    }
+
     Some(Ok(
       CircuitNumber::new(
         &self.id_generator,

@@ -207,6 +207,8 @@ impl CircuitBuilder {
             wire_id
           ));
 
+          self.wires_included.insert(circuit_number.id, wire_id);
+
           return wire_id;
         }
 
