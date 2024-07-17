@@ -15,8 +15,8 @@ use valuescript_vm::vs_value::VsType;
 #[derive(Clone)]
 pub enum CircuitNumberData {
   Input,
-  UnaryOp(UnaryOp, Rc<CircuitNumber>),
-  BinaryOp(BinaryOp, Rc<CircuitNumber>, Val),
+  UnaryOp(UnaryOp, Val),
+  BinaryOp(BinaryOp, Val, Val),
 }
 
 #[derive(Clone)]
@@ -93,25 +93,25 @@ impl ValTrait for CircuitNumber {
     Err("Cannot assign to subscript of CircuitNumber".to_type_error())
   }
 
-  fn override_binary_op(&self, op: BinaryOp, right: &Val) -> Option<Result<Val, Val>> {
-    if right.typeof_() != VsType::Number {
+  fn override_binary_op(&self, op: BinaryOp, left: &Val, right: &Val) -> Option<Result<Val, Val>> {
+    if left.typeof_() != VsType::Number || right.typeof_() != VsType::Number {
       return None;
     }
 
     Some(Ok(
       CircuitNumber::new(
         &self.id_generator,
-        CircuitNumberData::BinaryOp(op, Rc::new(self.clone()), right.clone()),
+        CircuitNumberData::BinaryOp(op, left.clone(), right.clone()),
       )
       .to_dynamic_val(),
     ))
   }
 
-  fn override_unary_op(&self, op: UnaryOp) -> Option<Result<Val, Val>> {
+  fn override_unary_op(&self, op: UnaryOp, input: &Val) -> Option<Result<Val, Val>> {
     Some(Ok(
       CircuitNumber::new(
         &self.id_generator,
-        CircuitNumberData::UnaryOp(op, Rc::new(self.clone())),
+        CircuitNumberData::UnaryOp(op, input.clone()),
       )
       .to_dynamic_val(),
     ))

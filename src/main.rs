@@ -17,7 +17,7 @@ use resolve_entry_path::resolve_entry_path;
 use valuescript_compiler::{assemble, compile};
 use valuescript_vm::{
   vs_value::{ToDynamicVal, Val},
-  Bytecode, DecoderMaker, VirtualMachine,
+  Bytecode, DecoderMaker, ValTrait, VirtualMachine,
 };
 
 mod circuit_number;
@@ -206,11 +206,13 @@ impl CircuitBuilder {
               .join(" "),
             wire_id
           ));
+
+          return wire_id;
         }
 
-        panic!("Can't include unrecognized type");
+        panic!("Can't include unrecognized type ({}) 1", val.codify());
       }
-      _ => panic!("Can't include unrecognized type"),
+      _ => panic!("Can't include unrecognized type ({}) 2", val.codify()),
     }
   }
 }
@@ -218,13 +220,13 @@ impl CircuitBuilder {
 fn get_dependencies(val: &Val) -> Vec<Val> {
   if let Val::Dynamic(val) = val {
     if let Some(circuit_number) = val.as_any().downcast_ref::<CircuitNumber>() {
-      return match circuit_number.data.clone() {
+      return match &circuit_number.data {
         CircuitNumberData::Input => vec![],
         CircuitNumberData::UnaryOp(_, input) => {
-          vec![Val::Dynamic(Rc::new((*input).clone()))]
+          vec![input.clone()]
         }
         CircuitNumberData::BinaryOp(_, left, right) => {
-          vec![Val::Dynamic(Rc::new((*left).clone())), right.clone()]
+          vec![left.clone(), right.clone()]
         }
       };
     }
