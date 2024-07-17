@@ -18,6 +18,8 @@ use serde::Serialize;
 use serde_json::to_string_pretty;
 use valuescript_compiler::{asm, assemble, compile};
 use valuescript_vm::{
+  binary_op::BinaryOp,
+  unary_op::UnaryOp,
   vs_value::{ToDynamicVal, Val},
   Bytecode, DecoderMaker, ValTrait, VirtualMachine,
 };
@@ -206,15 +208,22 @@ impl CircuitBuilder {
           let wire_id = self.wire_count;
           self.wire_count += 1;
 
+          let bristol_op_string = match &circuit_number.data {
+            CircuitNumberData::Input => panic!("Input should have been included earlier"),
+            CircuitNumberData::UnaryOp(unary_op, _) => to_bristol_unary_op(*unary_op),
+            CircuitNumberData::BinaryOp(binary_op, _, _) => to_bristol_binary_op(*binary_op),
+          };
+
           self.gates.push(format!(
-            "{} 1 {} {}",
+            "{} 1 {} {} {}",
             dependent_ids.len(),
             dependent_ids
               .iter()
               .map(|id| id.to_string())
               .collect::<Vec<String>>()
               .join(" "),
-            wire_id
+            wire_id,
+            bristol_op_string,
           ));
 
           self.wires_included.insert(circuit_number.id, wire_id);
@@ -333,4 +342,42 @@ struct CircuitInfo {
 struct ConstantInfo {
   value: String,
   wire_index: usize,
+}
+
+fn to_bristol_unary_op(unary_op: UnaryOp) -> String {
+  match unary_op {
+    UnaryOp::Plus => "AUnaryAdd",
+    UnaryOp::Minus => "AUnarySub",
+    UnaryOp::Not => "ANot",
+    UnaryOp::BitNot => "ABitNot",
+  }
+  .to_string()
+}
+
+fn to_bristol_binary_op(binary_op: BinaryOp) -> String {
+  match binary_op {
+    BinaryOp::Plus => "AAdd",
+    BinaryOp::Minus => "ASub",
+    BinaryOp::Mul => "AMul",
+    BinaryOp::Div => "ADiv",
+    BinaryOp::Mod => "AMod",
+    BinaryOp::Exp => "AExp",
+    BinaryOp::LooseEq => "AEq",
+    BinaryOp::LooseNe => "ANeq",
+    BinaryOp::Eq => "AEq",
+    BinaryOp::Ne => "ANeq",
+    BinaryOp::And => "ABoolAnd",
+    BinaryOp::Or => "ABoolOr",
+    BinaryOp::Less => "ALt",
+    BinaryOp::LessEq => "ALEq",
+    BinaryOp::Greater => "AGt",
+    BinaryOp::GreaterEq => "AGEq",
+    BinaryOp::BitAnd => "ABitAnd",
+    BinaryOp::BitOr => "ABitOr",
+    BinaryOp::BitXor => "AXor",
+    BinaryOp::LeftShift => "AShiftL",
+    BinaryOp::RightShift => "AShiftR",
+    BinaryOp::RightShiftUnsigned => "AShiftR",
+  }
+  .to_string()
 }
