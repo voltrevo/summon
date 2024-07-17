@@ -236,6 +236,7 @@ dependencies = [
  "serde_json",
  "serde_qs",
  "url",
+ "valuescript_common",
  "valuescript_compiler",
  "valuescript_vm",
 ]
@@ -1400,7 +1401,7 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 [[package]]
 name = "storage"
 version = "0.1.0"
-source = "git+https://github.com/voltrevo/ValueScript?rev=7fb6e8c#7fb6e8c2416abf51a8d6ab12efc68f0106ce1e43"
+source = "git+https://github.com/voltrevo/ValueScript?rev=c42c2f4#c42c2f4e5ba930b8c9e6341ba720a466fba86431"
 dependencies = [
  "bincode",
  "num-bigint",
@@ -2331,7 +2332,7 @@ dependencies = [
 [[package]]
 name = "valuescript_common"
 version = "0.1.0"
-source = "git+https://github.com/voltrevo/ValueScript?rev=7fb6e8c#7fb6e8c2416abf51a8d6ab12efc68f0106ce1e43"
+source = "git+https://github.com/voltrevo/ValueScript?rev=c42c2f4#c42c2f4e5ba930b8c9e6341ba720a466fba86431"
 dependencies = [
  "strum",
  "strum_macros",
@@ -2340,7 +2341,7 @@ dependencies = [
 [[package]]
 name = "valuescript_compiler"
 version = "0.1.0"
-source = "git+https://github.com/voltrevo/ValueScript?rev=7fb6e8c#7fb6e8c2416abf51a8d6ab12efc68f0106ce1e43"
+source = "git+https://github.com/voltrevo/ValueScript?rev=c42c2f4#c42c2f4e5ba930b8c9e6341ba720a466fba86431"
 dependencies = [
  "num-bigint",
  "num-traits",
@@ -2360,7 +2361,7 @@ dependencies = [
 [[package]]
 name = "valuescript_vm"
 version = "0.1.0"
-source = "git+https://github.com/voltrevo/ValueScript?rev=7fb6e8c#7fb6e8c2416abf51a8d6ab12efc68f0106ce1e43"
+source = "git+https://github.com/voltrevo/ValueScript?rev=c42c2f4#c42c2f4e5ba930b8c9e6341ba720a466fba86431"
 dependencies = [
  "num-bigint",
  "num-derive",

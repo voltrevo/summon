@@ -24,10 +24,17 @@ use valuescript_vm::{
   Bytecode, DecoderMaker, ValTrait, VirtualMachine,
 };
 
+mod bytecode;
+mod bytecode_decoder;
+mod bytecode_stack_frame;
 mod circuit_number;
+mod circuit_vm;
+mod cs_function;
 mod exit_command_failed;
+mod generator;
 mod handle_diagnostics_cli;
 mod id_generator;
+mod make_generator_frame;
 mod resolve_entry_path;
 
 fn main() {
