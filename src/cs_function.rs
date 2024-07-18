@@ -8,7 +8,12 @@ use crate::{
 };
 
 use valuescript_vm::{
-  internal_error_builtin::ToInternalError, vs_value::Val, StackFrame, ValTrait,
+  internal_error_builtin::ToInternalError,
+  type_error_builtin::ToTypeError,
+  vs_array::VsArray,
+  vs_class::VsClass,
+  vs_value::{ToDynamicVal, Val, VsType},
+  LoadFunctionResult, StackFrame, ValTrait,
 };
 
 #[derive(Debug, Clone)]
@@ -41,6 +46,7 @@ impl CsFunction {
     }
   }
 
+  #[allow(dead_code)] // TODO: CsFunction comparison
   pub fn content_hash(&self) -> Result<[u8; 32], Val> {
     match self.meta_pos {
       Some(p) => match self.bytecode.decoder(p).decode_meta().content_hash {
@@ -91,68 +97,68 @@ impl CsFunction {
 }
 
 impl ValTrait for CsFunction {
-  fn typeof_(&self) -> valuescript_vm::vs_value::VsType {
-    todo!()
+  fn typeof_(&self) -> VsType {
+    VsType::Function
   }
 
   fn to_number(&self) -> f64 {
-    todo!()
+    f64::NAN
   }
 
   fn to_index(&self) -> Option<usize> {
-    todo!()
+    None
   }
 
   fn is_primitive(&self) -> bool {
-    todo!()
+    false
   }
 
   fn is_truthy(&self) -> bool {
-    todo!()
+    true
   }
 
   fn is_nullish(&self) -> bool {
-    todo!()
+    false
   }
 
   fn bind(&self, params: Vec<Val>) -> Option<Val> {
-    todo!()
+    Some(self.bind(params).to_dynamic_val())
   }
 
   fn as_bigint_data(&self) -> Option<num_bigint::BigInt> {
-    todo!()
+    None
   }
 
-  fn as_array_data(&self) -> Option<Rc<valuescript_vm::vs_array::VsArray>> {
-    todo!()
+  fn as_array_data(&self) -> Option<Rc<VsArray>> {
+    None
   }
 
-  fn as_class_data(&self) -> Option<Rc<valuescript_vm::vs_class::VsClass>> {
-    todo!()
+  fn as_class_data(&self) -> Option<Rc<VsClass>> {
+    None
   }
 
-  fn load_function(&self) -> valuescript_vm::LoadFunctionResult {
-    todo!()
+  fn load_function(&self) -> LoadFunctionResult {
+    LoadFunctionResult::StackFrame(self.make_frame())
   }
 
-  fn sub(&self, key: &Val) -> Result<Val, Val> {
-    todo!()
+  fn sub(&self, _key: &Val) -> Result<Val, Val> {
+    Ok(Val::Undefined)
   }
 
-  fn has(&self, key: &Val) -> Option<bool> {
-    todo!()
+  fn has(&self, _key: &Val) -> Option<bool> {
+    Some(false)
   }
 
-  fn submov(&mut self, key: &Val, value: Val) -> Result<(), Val> {
-    todo!()
+  fn submov(&mut self, _key: &Val, _value: Val) -> Result<(), Val> {
+    Err("TODO: function subscript assignment".to_type_error())
   }
 
   fn pretty_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    todo!()
+    write!(f, "\x1b[36m[Function]\x1b[39m")
   }
 
   fn codify(&self) -> String {
-    todo!()
+    "() => { [unavailable] }".to_string()
   }
 }
 

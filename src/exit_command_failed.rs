@@ -1,13 +1,13 @@
 use std::process::exit;
 
-pub fn exit_command_failed(args: &[String], context: Option<&str>, help: &str) -> ! {
+pub fn exit_command_failed(args: &[String], context: Option<&str>, msg: &str) -> ! {
   println!("Command failed: {:?}", args);
 
   if let Some(context) = context {
     println!("  {}", context);
   }
 
-  println!("  For help: {}", help);
+  println!("  {}", msg);
 
   exit(1);
 }

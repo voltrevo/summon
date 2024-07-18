@@ -1,4 +1,5 @@
 use std::{
+  any::Any,
   cell::RefCell,
   collections::HashMap,
   fs::{self, File},
@@ -8,7 +9,10 @@ use std::{
 
 use std::io::Write;
 
+use bytecode::{Bytecode, DecoderMaker};
 use circuit_number::{CircuitNumber, CircuitNumberData};
+use circuit_vm::CircuitVM;
+use cs_function::CsFunction;
 use exit_command_failed::exit_command_failed;
 use handle_diagnostics_cli::handle_diagnostics_cli;
 use id_generator::IdGenerator;
@@ -21,9 +25,10 @@ use valuescript_vm::{
   binary_op::BinaryOp,
   unary_op::UnaryOp,
   vs_value::{ToDynamicVal, Val},
-  Bytecode, DecoderMaker, ValTrait, VirtualMachine,
+  ValTrait,
 };
 
+mod arithmetic_merge;
 mod bytecode;
 mod bytecode_decoder;
 mod bytecode_stack_frame;
@@ -76,9 +81,9 @@ fn get_cli_default_export(args: &Vec<String>) -> (String, asm::Function, Val) {
 }
 
 fn run(args: &[String], main: Val) -> (usize, Vec<Val>) {
-  let param_count = match &main {
-    Val::Function(main) => main.parameter_count,
-    _ => exit_command_failed(args, None, "Default export is not a regular function"),
+  let param_count = match val_dynamic_downcast::<CsFunction>(&main) {
+    Some(cs_fn) => cs_fn.parameter_count,
+    None => exit_command_failed(args, None, "Default export is not a regular function"),
   };
 
   let id_gen = Rc::new(RefCell::new(IdGenerator::new()));
@@ -88,7 +93,7 @@ fn run(args: &[String], main: Val) -> (usize, Vec<Val>) {
     input_args.push(CircuitNumber::new(&id_gen, CircuitNumberData::Input).to_dynamic_val());
   }
 
-  let mut vm = VirtualMachine::default();
+  let mut vm = CircuitVM::default();
 
   let res = vm.run(None, &mut Val::Undefined, main, input_args);
 
@@ -99,6 +104,13 @@ fn run(args: &[String], main: Val) -> (usize, Vec<Val>) {
       eprintln!("Uncaught exception: {}", err.pretty());
       std::process::exit(1);
     }
+  }
+}
+
+fn val_dynamic_downcast<T: Any>(val: &Val) -> Option<&T> {
+  match val {
+    Val::Dynamic(dynamic) => dynamic.as_any().downcast_ref::<T>(),
+    _ => None,
   }
 }
 

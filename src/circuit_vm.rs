@@ -1,13 +1,10 @@
 use std::mem::take;
-use std::rc::Rc;
 
 use valuescript_vm::internal_error_builtin::ToInternalError;
 use valuescript_vm::vs_value::Val;
 use valuescript_vm::{
   CallResult, FirstStackFrame, FrameStepOk, LoadFunctionResult, StackFrame, ValTrait,
 };
-
-use crate::bytecode::{Bytecode, DecoderMaker};
 
 pub struct CircuitVM {
   pub frame: StackFrame,
@@ -132,9 +129,5 @@ impl CircuitVM {
     }
 
     Err(exception)
-  }
-
-  pub fn read_default_export(bytecode: Rc<Bytecode>) -> Val {
-    bytecode.decoder(0).decode_val(&mut Vec::new())
   }
 }
