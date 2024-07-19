@@ -34,6 +34,7 @@ mod bytecode_decoder;
 mod bytecode_stack_frame;
 mod circuit_signal;
 mod circuit_vm;
+mod circuit_vm_branch;
 mod cs_function;
 mod exit_command_failed;
 mod generator;

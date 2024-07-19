@@ -6,9 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-valuescript_compiler = { git = "https://github.com/voltrevo/ValueScript", rev = "3a07337" }
-valuescript_vm = { git = "https://github.com/voltrevo/ValueScript", rev = "3a07337" }
-valuescript_common = { git = "https://github.com/voltrevo/ValueScript", rev = "3a07337" }
+valuescript_compiler = { git = "https://github.com/voltrevo/ValueScript", rev = "29c028e" }
+valuescript_vm = { git = "https://github.com/voltrevo/ValueScript", rev = "29c028e" }
+valuescript_common = { git = "https://github.com/voltrevo/ValueScript", rev = "29c028e" }
 num-bigint = "0.4"
 num-traits = "0.2"
 url = "2.2.1"

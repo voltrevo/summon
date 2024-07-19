@@ -28,7 +28,7 @@ pub struct BytecodeStackFrame {
   pub catch_setting: Option<CatchSetting>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct CatchSetting {
   pub pos: usize,
   pub register: Option<usize>,
@@ -110,6 +110,61 @@ impl BytecodeStackFrame {
       Val::Array(array_data) => array_data.elements.clone(),
       _ => panic!("Unexpected non-array params"),
     }
+  }
+
+  pub fn can_merge(&self, other: &BytecodeStackFrame) -> bool {
+    if !std::ptr::eq(
+      self.decoder.bytecode.as_ref(),
+      other.decoder.bytecode.as_ref(),
+    ) {
+      return false;
+    }
+
+    let BytecodeStackFrame {
+      decoder,
+      registers,
+      const_this,
+      param_start,
+      param_end,
+      this_target,
+      return_target,
+      catch_setting,
+    } = self;
+
+    let self_fields = (
+      decoder.pos,
+      registers.len(),
+      const_this,
+      param_start,
+      param_end,
+      this_target,
+      return_target,
+      catch_setting,
+    );
+
+    let BytecodeStackFrame {
+      decoder,
+      registers,
+      const_this,
+      param_start,
+      param_end,
+      this_target,
+      return_target,
+      catch_setting,
+    } = other;
+
+    let other_fields = (
+      decoder.pos,
+      registers.len(),
+      const_this,
+      param_start,
+      param_end,
+      this_target,
+      return_target,
+      catch_setting,
+    );
+
+    self_fields == other_fields
   }
 }
 

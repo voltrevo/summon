@@ -1,23 +1,22 @@
-use std::mem::take;
+use std::{cmp::Ordering, collections::BinaryHeap, mem::take, rc::Rc};
 
-use valuescript_vm::internal_error_builtin::ToInternalError;
-use valuescript_vm::vs_value::Val;
 use valuescript_vm::{
-  CallResult, FirstStackFrame, FrameStepOk, LoadFunctionResult, StackFrame, ValTrait,
+  internal_error_builtin::ToInternalError,
+  vs_value::{ToVal, Val},
+  CallResult, FirstStackFrame, LoadFunctionResult, StackFrameTrait, ValTrait,
 };
 
-pub struct CircuitVM {
-  pub frame: StackFrame,
-  pub stack: Vec<StackFrame>,
-}
+use crate::{
+  arithmetic_merge::arithmetic_merge,
+  circuit_vm_branch::{
+    as_bytecode_stack_frame, as_bytecode_stack_frame_mut, as_first_stack_frame, CircuitVMBranch,
+  },
+};
 
-impl Default for CircuitVM {
-  fn default() -> Self {
-    CircuitVM {
-      frame: Box::new(FirstStackFrame::new()),
-      stack: Default::default(),
-    }
-  }
+#[derive(Default)]
+pub struct CircuitVM {
+  pub branch: CircuitVMBranch,
+  pub alt_branches: BinaryHeap<CircuitVMBranch>,
 }
 
 impl CircuitVM {
@@ -39,7 +38,12 @@ impl CircuitVM {
       frame.write_param(a);
     }
 
-    self.push(frame);
+    self.branch = CircuitVMBranch {
+      flag: 1f64.to_val(),
+      frame: Rc::new(frame),
+      stack: vec![Rc::new(Box::new(FirstStackFrame::new()))],
+      sub_branch: None,
+    };
 
     let res = match step_limit {
       Some(step_limit) => 'b: {
@@ -49,19 +53,20 @@ impl CircuitVM {
           self.step()?;
           step_count += 1;
 
-          if self.stack.is_empty() {
-            break 'b self.frame.get_call_result();
+          if self.branch.stack.is_empty() {
+            assert!(self.alt_branches.is_empty());
+            break 'b self.branch.frame_mut().get_call_result();
           }
         }
 
         return Err("step limit reached".to_internal_error());
       }
       None => {
-        while !self.stack.is_empty() {
+        while !self.branch.stack.is_empty() {
           self.step()?;
         }
 
-        self.frame.get_call_result()
+        self.branch.frame_mut().get_call_result()
       }
     };
 
@@ -76,57 +81,119 @@ impl CircuitVM {
   }
 
   pub fn step(&mut self) -> Result<(), Val> {
-    let step_ok = match self.frame.step() {
-      Ok(step_ok) => step_ok,
-      Err(e) => return self.handle_exception(e),
-    };
+    self.assert_current_branch_best();
+    assert!(self.branch.sub_branch.is_none());
 
-    match step_ok {
-      FrameStepOk::Continue => {}
-      FrameStepOk::Pop(call_result) => {
-        self.pop();
-        self.frame.apply_call_result(call_result);
+    self.branch.step()?;
+
+    if let Some(sub_branch) = take(&mut self.branch.sub_branch) {
+      self.alt_branches.push(*sub_branch);
+    }
+
+    loop {
+      if let Some(alt_branch) = self.alt_branches.peek() {
+        match self.branch.cmp(alt_branch) {
+          Ordering::Less => {
+            // Since the current branch is a lower priority than the best alt branch, adopt the best
+            // alt branch.
+            let alt_branch = self.alt_branches.pop().unwrap();
+            self.set_branch(alt_branch);
+
+            continue;
+          }
+          Ordering::Equal => {
+            if let Some(current_frame) = as_first_stack_frame(&self.branch.frame) {
+              let alt_frame = as_first_stack_frame(&alt_branch.frame)
+                .expect("Should be first stack frame since the branches are equal");
+
+              let mut new_frame = FirstStackFrame::new();
+
+              new_frame.apply_call_result(CallResult {
+                return_: arithmetic_merge(
+                  &self.branch.flag,
+                  &current_frame.call_result.return_,
+                  &alt_branch.flag,
+                  &alt_frame.call_result.return_,
+                ),
+                this: arithmetic_merge(
+                  &self.branch.flag,
+                  &current_frame.call_result.this,
+                  &alt_branch.flag,
+                  &alt_frame.call_result.this,
+                ),
+              });
+
+              let mut new_frame = Rc::new(Box::new(new_frame) as Box<dyn StackFrameTrait>);
+
+              std::mem::swap(&mut self.branch.frame, &mut new_frame);
+              self.branch.flag = 1f64.to_val();
+
+              self.alt_branches.pop();
+
+              continue;
+            }
+
+            if let (Some(current_frame), Some(alt_frame)) = (
+              as_bytecode_stack_frame_mut(&mut self.branch.frame),
+              as_bytecode_stack_frame(&alt_branch.frame),
+            ) {
+              assert!(current_frame.can_merge(alt_frame));
+
+              assert!(self.branch.stack.len() == alt_branch.stack.len());
+
+              // Because of the way we prefer deeper stacks, step once at a time, and a step cannot
+              // simultaneously pop and push frame(s), it should not be possible to have unequal stack
+              // traces here.
+              for i in 0..self.branch.stack.len() {
+                assert!(std::ptr::eq(
+                  self.branch.stack[i].as_ref(),
+                  alt_branch.stack[i].as_ref()
+                ));
+              }
+
+              let mut new_registers = Vec::<Val>::new();
+
+              assert!(current_frame.registers.len() == alt_frame.registers.len());
+
+              for i in 0..current_frame.registers.len() {
+                new_registers.push(arithmetic_merge(
+                  &self.branch.flag,
+                  &current_frame.registers[i],
+                  &alt_branch.flag,
+                  &alt_frame.registers[i],
+                ));
+              }
+
+              current_frame.registers = new_registers;
+              self.branch.flag = 1f64.to_val();
+
+              self.alt_branches.pop();
+
+              continue;
+            }
+
+            break;
+          }
+          Ordering::Greater => {
+            break;
+          }
+        }
       }
-      FrameStepOk::Push(new_frame) => {
-        self.push(new_frame);
-      }
-      // TODO: Internal errors
-      FrameStepOk::Yield(_) => {
-        return self.handle_exception("Unexpected yield".to_internal_error())
-      }
-      FrameStepOk::YieldStar(_) => {
-        return self.handle_exception("Unexpected yield*".to_internal_error())
-      }
+
+      break;
     }
 
     Ok(())
   }
 
-  pub fn push(&mut self, mut frame: StackFrame) {
-    std::mem::swap(&mut self.frame, &mut frame);
-    self.stack.push(frame);
+  fn set_branch(&mut self, mut new_branch: CircuitVMBranch) {
+    std::mem::swap(&mut self.branch, &mut new_branch);
+    self.alt_branches.push(new_branch);
   }
 
-  pub fn pop(&mut self) {
-    // This name is accurate after the swap
-    let mut old_frame = self.stack.pop().unwrap();
-    std::mem::swap(&mut self.frame, &mut old_frame);
-  }
-
-  pub fn handle_exception(&mut self, mut exception: Val) -> Result<(), Val> {
-    while !self.stack.is_empty() {
-      if self.frame.can_catch_exception(&exception) {
-        self.frame.catch_exception(&mut exception);
-        return Ok(());
-      }
-
-      if self.stack.is_empty() {
-        return Err(exception);
-      }
-
-      self.pop();
+  fn assert_current_branch_best(&self) {
+    if let Some(alt_branch) = self.alt_branches.peek() {
+      assert!(&self.branch > alt_branch);
     }
-
-    Err(exception)
   }
 }
