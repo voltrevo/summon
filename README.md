@@ -68,5 +68,4 @@ circuit-script examples/loopAdd.ts
 
 ## Limitations
 
-- Branching on signals is not implemented *yet*
 - You can't use a signal as an array index
