@@ -7,10 +7,8 @@ use valuescript_vm::{
 };
 
 use crate::{
-  arithmetic_merge::arithmetic_merge,
-  circuit_vm_branch::{
-    as_bytecode_stack_frame, as_bytecode_stack_frame_mut, as_first_stack_frame, CircuitVMBranch,
-  },
+  arithmetic_merge::arithmetic_merge, bytecode_stack_frame::BytecodeStackFrame,
+  circuit_vm_branch::CircuitVMBranch,
 };
 
 #[derive(Default)]
@@ -102,8 +100,13 @@ impl CircuitVM {
             continue;
           }
           Ordering::Equal => {
-            if let Some(current_frame) = as_first_stack_frame(&self.branch.frame) {
-              let alt_frame = as_first_stack_frame(&alt_branch.frame)
+            if let Some(current_frame) =
+              self.branch.frame.as_any().downcast_ref::<FirstStackFrame>()
+            {
+              let alt_frame = alt_branch
+                .frame
+                .as_any()
+                .downcast_ref::<FirstStackFrame>()
                 .expect("Should be first stack frame since the branches are equal");
 
               let mut new_frame = FirstStackFrame::new();
@@ -134,8 +137,13 @@ impl CircuitVM {
             }
 
             if let (Some(current_frame), Some(alt_frame)) = (
-              as_bytecode_stack_frame_mut(&mut self.branch.frame),
-              as_bytecode_stack_frame(&alt_branch.frame),
+              Rc::make_mut(&mut self.branch.frame)
+                .as_any_mut()
+                .downcast_mut::<BytecodeStackFrame>(),
+              alt_branch
+                .frame
+                .as_any()
+                .downcast_ref::<BytecodeStackFrame>(),
             ) {
               assert!(current_frame.can_merge(alt_frame));
 

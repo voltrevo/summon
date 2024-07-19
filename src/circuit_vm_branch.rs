@@ -1,4 +1,3 @@
-use std::any::Any;
 use std::cmp::Ordering;
 use std::mem::take;
 use std::rc::Rc;
@@ -42,7 +41,10 @@ impl CircuitVMBranch {
 
     match step_ok {
       FrameStepOk::Continue => {
-        if let Some(frame) = (self.frame_mut() as &mut dyn Any).downcast_mut::<BytecodeStackFrame>()
+        if let Some(frame) = self
+          .frame_mut()
+          .as_any_mut()
+          .downcast_mut::<BytecodeStackFrame>()
         {
           if let Some(fork_info) = take(&mut frame.fork_info) {
             let mut alt_branch = self.clone();
@@ -52,8 +54,6 @@ impl CircuitVMBranch {
             alt_branch.frame = Rc::new(Box::new(fork_info.alt_frame));
 
             self.alt_branch = Some(Box::new(alt_branch));
-
-            println!("Created alt_branch");
           }
         }
       }
@@ -115,8 +115,8 @@ impl Ord for CircuitVMBranch {
     }
 
     match (
-      as_bytecode_stack_frame(&self.frame),
-      as_bytecode_stack_frame(&other.frame),
+      self.frame.as_any().downcast_ref::<BytecodeStackFrame>(),
+      other.frame.as_any().downcast_ref::<BytecodeStackFrame>(),
     ) {
       (Some(self_frame), Some(other_frame)) => {
         // We prefer working on an earlier bytecode position, but we have a max-heap so we need to
@@ -141,16 +141,4 @@ impl PartialEq for CircuitVMBranch {
   fn eq(&self, other: &Self) -> bool {
     self.cmp(other) == Ordering::Equal
   }
-}
-
-pub fn as_bytecode_stack_frame(frame: &Rc<StackFrame>) -> Option<&BytecodeStackFrame> {
-  (frame.as_ref() as &dyn Any).downcast_ref::<BytecodeStackFrame>()
-}
-
-pub fn as_bytecode_stack_frame_mut(frame: &mut Rc<StackFrame>) -> Option<&mut BytecodeStackFrame> {
-  (Rc::make_mut(frame) as &mut dyn Any).downcast_mut::<BytecodeStackFrame>()
-}
-
-pub fn as_first_stack_frame(frame: &Rc<StackFrame>) -> Option<&FirstStackFrame> {
-  (frame.as_ref() as &dyn Any).downcast_ref::<FirstStackFrame>()
 }

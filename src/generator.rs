@@ -239,6 +239,14 @@ impl StackFrameTrait for GeneratorFrame {
   fn clone_to_stack_frame(&self) -> StackFrame {
     Box::new(self.clone())
   }
+
+  fn as_any(&self) -> &dyn std::any::Any {
+    self
+  }
+
+  fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+    self
+  }
 }
 
 #[derive(Clone, Default)]
@@ -353,5 +361,13 @@ impl StackFrameTrait for YieldStarFrame {
 
   fn clone_to_stack_frame(&self) -> StackFrame {
     Box::new(self.clone())
+  }
+
+  fn as_any(&self) -> &dyn std::any::Any {
+    self
+  }
+
+  fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+    self
   }
 }

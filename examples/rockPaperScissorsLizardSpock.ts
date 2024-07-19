@@ -18,12 +18,15 @@ const winConditions = [
 ];
 
 export default function main(player1: number, player2: number) {
-  let res = 0;
-
   for (const [winningChoice, losingChoice] of winConditions) {
-    res += +(player1 === winningChoice && player2 === losingChoice);
-    res += 2 * +(player2 === winningChoice && player1 === losingChoice);
+    if (player1 === winningChoice && player2 === losingChoice) {
+      return 1;
+    }
+
+    if (player2 === winningChoice && player1 === losingChoice) {
+      return 2;
+    }
   }
 
-  return res;
+  return 0;
 }
