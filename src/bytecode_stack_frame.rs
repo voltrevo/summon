@@ -706,17 +706,24 @@ impl StackFrameTrait for BytecodeStackFrame {
     panic!("Not appropriate for BytecodeStackFrame")
   }
 
+  fn can_catch_exception(&self, _exception: &Val) -> bool {
+    self.catch_setting.is_some()
+  }
+
   fn catch_exception(&mut self, exception: &mut Val) {
-    if let Some(catch_setting) = &self.catch_setting {
-      let exception = take(exception);
+    let catch_setting = self
+      .catch_setting
+      .as_ref()
+      .expect("can_catch_exception should have been checked before calling this");
 
-      if let Some(r) = catch_setting.register {
-        self.registers[r] = exception;
-      }
+    let exception = take(exception);
 
-      self.decoder.pos = catch_setting.pos;
-      self.catch_setting = None;
+    if let Some(r) = catch_setting.register {
+      self.registers[r] = exception;
     }
+
+    self.decoder.pos = catch_setting.pos;
+    self.catch_setting = None;
   }
 
   fn clone_to_stack_frame(&self) -> StackFrame {
