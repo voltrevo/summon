@@ -5,16 +5,25 @@ use valuescript_vm::cat_stack_frame::CatStackFrame;
 use valuescript_vm::internal_error_builtin::ToInternalError;
 use valuescript_vm::jsx_element::JsxElement;
 use valuescript_vm::native_function::ThisWrapper;
-use valuescript_vm::operations::op_delete;
+use valuescript_vm::operations::{op_delete, op_not};
 use valuescript_vm::type_error_builtin::ToTypeError;
 use valuescript_vm::vs_object::VsObject;
-use valuescript_vm::vs_value::{ToDynamicVal, ToVal};
+use valuescript_vm::vs_value::{ToDynamicVal, ToVal, VsType};
 use valuescript_vm::{
   operations, CallResult, FrameStepOk, FrameStepResult, LoadFunctionResult, StackFrame, ValTrait,
 };
 use valuescript_vm::{vs_value::Val, StackFrameTrait};
 
 use crate::bytecode_decoder::{BytecodeDecoder, BytecodeType};
+use crate::circuit_signal::CircuitSignal;
+use crate::val_dynamic_downcast;
+
+#[derive(Clone)]
+pub struct ForkInfo {
+  pub flag: Val,
+  pub alt_flag: Val,
+  pub alt_frame: BytecodeStackFrame,
+}
 
 #[derive(Clone)]
 pub struct BytecodeStackFrame {
@@ -26,6 +35,7 @@ pub struct BytecodeStackFrame {
   pub this_target: Option<usize>,
   pub return_target: Option<usize>,
   pub catch_setting: Option<CatchSetting>,
+  pub fork_info: Option<Box<ForkInfo>>,
 }
 
 #[derive(Clone, PartialEq, Eq)]
@@ -129,6 +139,7 @@ impl BytecodeStackFrame {
       this_target,
       return_target,
       catch_setting,
+      fork_info: _,
     } = self;
 
     let self_fields = (
@@ -151,6 +162,7 @@ impl BytecodeStackFrame {
       this_target,
       return_target,
       catch_setting,
+      fork_info: _,
     } = other;
 
     let other_fields = (
@@ -451,18 +463,62 @@ impl StackFrameTrait for BytecodeStackFrame {
         self.decoder.pos = dst;
       }
 
-      JmpIf => {
+      JmpIf => 'b: {
         let cond = self.decoder.decode_val(&mut self.registers);
         let dst = self.decoder.decode_pos();
+
+        if let Some(cond_signal) = val_dynamic_downcast::<CircuitSignal>(&cond) {
+          let mut alt_frame = self.clone();
+          alt_frame.decoder.pos = dst;
+
+          let flag = op_not(&cond).unwrap();
+
+          let alt_flag = match cond_signal.type_ {
+            VsType::Bool => cond,
+            VsType::Number => op_not(&flag).unwrap(),
+            _ => panic!("Unexpected signal type {}", cond_signal.type_),
+          };
+
+          self.fork_info = Some(Box::new(ForkInfo {
+            flag,
+            alt_flag,
+            alt_frame,
+          }));
+
+          break 'b;
+        }
 
         if cond.is_truthy() {
           self.decoder.pos = dst;
         }
       }
 
-      JmpIfNot => {
+      JmpIfNot => 'b: {
         let cond = self.decoder.decode_val(&mut self.registers);
         let dst = self.decoder.decode_pos();
+
+        if let Some(cond_signal) = val_dynamic_downcast::<CircuitSignal>(&cond) {
+          let mut alt_frame = self.clone();
+          alt_frame.decoder.pos = dst;
+
+          let alt_flag = op_not(&cond).unwrap();
+
+          let flag = match cond_signal.type_ {
+            VsType::Bool => cond,
+            VsType::Number => op_not(&alt_flag).unwrap(),
+            _ => panic!("Unexpected signal type {}", cond_signal.type_),
+          };
+
+          self.fork_info = Some(Box::new(ForkInfo {
+            flag,
+            alt_flag,
+            alt_frame,
+          }));
+
+          println!("Created fork");
+
+          break 'b;
+        }
 
         if !cond.is_truthy() {
           self.decoder.pos = dst;

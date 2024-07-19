@@ -107,9 +107,7 @@ fn quick_val_eq(left: &Val, right: &Val) -> bool {
     (Val::Object(left), Val::Object(right)) => std::ptr::eq(&**left, &**right),
     (Val::Function(left), Val::Function(right)) => std::ptr::eq(&**left, &**right),
     (Val::Class(left), Val::Class(right)) => std::ptr::eq(&**left, &**right),
-    #[allow(clippy::vtable_address_comparisons)] // TODO: Is this ok?
     (Val::Static(left), Val::Static(right)) => std::ptr::eq(&**left, &**right),
-    #[allow(clippy::vtable_address_comparisons)] // TODO: Is this ok?
     (Val::Dynamic(left), Val::Dynamic(right)) => std::ptr::eq(&**left, &**right),
     (Val::CopyCounter(left), Val::CopyCounter(right)) => std::ptr::eq(&**left, &**right),
     (Val::StoragePtr(left), Val::StoragePtr(right)) => std::ptr::eq(&**left, &**right),

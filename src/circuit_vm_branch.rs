@@ -1,18 +1,21 @@
 use std::any::Any;
 use std::cmp::Ordering;
+use std::mem::take;
 use std::rc::Rc;
 
 use valuescript_vm::internal_error_builtin::ToInternalError;
+use valuescript_vm::operations::op_mul;
 use valuescript_vm::vs_value::{ToVal, Val};
 use valuescript_vm::{FirstStackFrame, FrameStepOk, StackFrame};
 
 use crate::bytecode_stack_frame::BytecodeStackFrame;
 
+#[derive(Clone)]
 pub struct CircuitVMBranch {
   pub flag: Val,
   pub frame: Rc<StackFrame>,
   pub stack: Vec<Rc<StackFrame>>,
-  pub sub_branch: Option<Box<CircuitVMBranch>>,
+  pub alt_branch: Option<Box<CircuitVMBranch>>,
 }
 
 impl Default for CircuitVMBranch {
@@ -21,7 +24,7 @@ impl Default for CircuitVMBranch {
       flag: 1f64.to_val(),
       frame: Rc::new(Box::new(FirstStackFrame::new())),
       stack: Default::default(),
-      sub_branch: None,
+      alt_branch: None,
     }
   }
 }
@@ -38,7 +41,22 @@ impl CircuitVMBranch {
     };
 
     match step_ok {
-      FrameStepOk::Continue => {}
+      FrameStepOk::Continue => {
+        if let Some(frame) = (self.frame_mut() as &mut dyn Any).downcast_mut::<BytecodeStackFrame>()
+        {
+          if let Some(fork_info) = take(&mut frame.fork_info) {
+            let mut alt_branch = self.clone();
+
+            self.flag = op_mul(&self.flag, &fork_info.flag).unwrap();
+            alt_branch.flag = op_mul(&alt_branch.flag, &fork_info.alt_flag).unwrap();
+            alt_branch.frame = Rc::new(Box::new(fork_info.alt_frame));
+
+            self.alt_branch = Some(Box::new(alt_branch));
+
+            println!("Created alt_branch");
+          }
+        }
+      }
       FrameStepOk::Pop(call_result) => {
         self.pop();
         self.frame_mut().apply_call_result(call_result);

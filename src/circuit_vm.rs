@@ -42,7 +42,7 @@ impl CircuitVM {
       flag: 1f64.to_val(),
       frame: Rc::new(frame),
       stack: vec![Rc::new(Box::new(FirstStackFrame::new()))],
-      sub_branch: None,
+      alt_branch: None,
     };
 
     let res = match step_limit {
@@ -82,12 +82,12 @@ impl CircuitVM {
 
   pub fn step(&mut self) -> Result<(), Val> {
     self.assert_current_branch_best();
-    assert!(self.branch.sub_branch.is_none());
+    assert!(self.branch.alt_branch.is_none());
 
     self.branch.step()?;
 
-    if let Some(sub_branch) = take(&mut self.branch.sub_branch) {
-      self.alt_branches.push(*sub_branch);
+    if let Some(alt_branch) = take(&mut self.branch.alt_branch) {
+      self.alt_branches.push(*alt_branch);
     }
 
     loop {

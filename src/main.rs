@@ -53,7 +53,7 @@ fn main() {
   generate_circuit_info(name, fn_, output_ids, constants);
 }
 
-fn get_cli_default_export(args: &Vec<String>) -> (String, asm::Function, Val) {
+fn get_cli_default_export(args: &[String]) -> (String, asm::Function, Val) {
   if args.len() != 2 {
     exit_command_failed(args, None, &format!("Usage: {} <main file>", args[0]));
   }
