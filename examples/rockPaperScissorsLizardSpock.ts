@@ -21,13 +21,9 @@ export default function main(player1: number, player2: number) {
   let res = 0;
 
   for (const [winningChoice, losingChoice] of winConditions) {
-    res += eq(player1, winningChoice) * eq(player2, losingChoice);
-    res += 2 * eq(player2, winningChoice) * eq(player1, losingChoice);
+    res += +(player1 === winningChoice && player2 === losingChoice);
+    res += 2 * +(player2 === winningChoice && player1 === losingChoice);
   }
 
   return res;
-}
-
-function eq(a: number, b: number): number {
-  return 1 * ((a === b) as unknown as number);
 }

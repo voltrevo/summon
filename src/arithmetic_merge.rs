@@ -6,7 +6,7 @@ use valuescript_vm::{
   vs_value::{ToVal, Val},
 };
 
-use crate::{circuit_number::CircuitNumber, val_dynamic_downcast};
+use crate::{circuit_signal::CircuitSignal, val_dynamic_downcast};
 
 /**
  * Merges two values after branching.
@@ -21,7 +21,7 @@ use crate::{circuit_number::CircuitNumber, val_dynamic_downcast};
  *     
  *     // merge here
  *
- * Suppose `cond` and `input` are CircuitNumbers (signals).
+ * Suppose `cond` and `input` are signals.
  *
  * The VM does not know whether to skip the `if` block, so it forks the
  * execution and can then merge it back together afterwards.
@@ -120,7 +120,7 @@ fn quick_val_eq(left: &Val, right: &Val) -> bool {
 fn is_number_or_circuit_number(val: &Val) -> bool {
   match val {
     Val::Number(_) => true,
-    Val::Dynamic(_) => val_dynamic_downcast::<CircuitNumber>(val).is_some(),
+    Val::Dynamic(_) => val_dynamic_downcast::<CircuitSignal>(val).is_some(),
     _ => false,
   }
 }

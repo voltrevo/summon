@@ -10,7 +10,7 @@ use std::{
 use std::io::Write;
 
 use bytecode::{Bytecode, DecoderMaker};
-use circuit_number::{CircuitNumber, CircuitNumberData};
+use circuit_signal::{CircuitSignal, CircuitSignalData};
 use circuit_vm::CircuitVM;
 use cs_function::CsFunction;
 use exit_command_failed::exit_command_failed;
@@ -24,7 +24,7 @@ use valuescript_compiler::{asm, assemble, compile};
 use valuescript_vm::{
   binary_op::BinaryOp,
   unary_op::UnaryOp,
-  vs_value::{ToDynamicVal, Val},
+  vs_value::{ToDynamicVal, Val, VsType},
   ValTrait,
 };
 
@@ -32,7 +32,7 @@ mod arithmetic_merge;
 mod bytecode;
 mod bytecode_decoder;
 mod bytecode_stack_frame;
-mod circuit_number;
+mod circuit_signal;
 mod circuit_vm;
 mod cs_function;
 mod exit_command_failed;
@@ -90,7 +90,9 @@ fn run(args: &[String], main: Val) -> (usize, Vec<Val>) {
   let mut input_args = Vec::<Val>::new();
 
   for _ in 0..param_count {
-    input_args.push(CircuitNumber::new(&id_gen, CircuitNumberData::Input).to_dynamic_val());
+    input_args.push(
+      CircuitSignal::new(&id_gen, Some(VsType::Number), CircuitSignalData::Input).to_dynamic_val(),
+    );
   }
 
   let mut vm = CircuitVM::default();
@@ -165,7 +167,7 @@ fn generate_circuit(input_len: usize, outputs: Vec<Val>) -> (Vec<usize>, HashMap
 struct CircuitBuilder {
   gates: Vec<String>,
   wire_count: usize,
-  wires_included: HashMap<usize, usize>, // CircuitNumber.id -> wire_id
+  wires_included: HashMap<usize, usize>, // CircuitSignal.id -> wire_id
   constants: HashMap<usize, usize>,      // value -> wire_id
 }
 
@@ -214,7 +216,7 @@ impl CircuitBuilder {
         wire_id
       }
       Val::Dynamic(dyn_val) => {
-        if let Some(circuit_number) = dyn_val.as_any().downcast_ref::<CircuitNumber>() {
+        if let Some(circuit_number) = dyn_val.as_any().downcast_ref::<CircuitSignal>() {
           if let Some(wire_id) = self.wires_included.get(&circuit_number.id) {
             return *wire_id;
           }
@@ -228,9 +230,9 @@ impl CircuitBuilder {
           self.wire_count += 1;
 
           let bristol_op_string = match &circuit_number.data {
-            CircuitNumberData::Input => panic!("Input should have been included earlier"),
-            CircuitNumberData::UnaryOp(unary_op, _) => to_bristol_unary_op(*unary_op),
-            CircuitNumberData::BinaryOp(binary_op, _, _) => to_bristol_binary_op(*binary_op),
+            CircuitSignalData::Input => panic!("Input should have been included earlier"),
+            CircuitSignalData::UnaryOp(unary_op, _) => to_bristol_unary_op(*unary_op),
+            CircuitSignalData::BinaryOp(binary_op, _, _) => to_bristol_binary_op(*binary_op),
           };
 
           self.gates.push(format!(
@@ -259,13 +261,13 @@ impl CircuitBuilder {
 
 fn get_dependencies(val: &Val) -> Vec<Val> {
   if let Val::Dynamic(val) = val {
-    if let Some(circuit_number) = val.as_any().downcast_ref::<CircuitNumber>() {
+    if let Some(circuit_number) = val.as_any().downcast_ref::<CircuitSignal>() {
       return match &circuit_number.data {
-        CircuitNumberData::Input => vec![],
-        CircuitNumberData::UnaryOp(_, input) => {
+        CircuitSignalData::Input => vec![],
+        CircuitSignalData::UnaryOp(_, input) => {
           vec![input.clone()]
         }
-        CircuitNumberData::BinaryOp(_, left, right) => {
+        CircuitSignalData::BinaryOp(_, left, right) => {
           vec![left.clone(), right.clone()]
         }
       };
