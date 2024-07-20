@@ -2,8 +2,10 @@ use std::collections::BTreeMap;
 
 use valuescript_vm::{
   operations::{op_mul, op_plus, op_triple_eq_impl},
+  type_error_builtin::ToTypeError,
   vs_object::VsObject,
-  vs_value::{ToVal, Val},
+  vs_value::{ToDynamicVal, ToVal, Val, VsType},
+  LoadFunctionResult, ValTrait,
 };
 
 use crate::{circuit_signal::CircuitSignal, val_dynamic_downcast};
@@ -50,7 +52,7 @@ pub fn arithmetic_merge(left_flag: &Val, left: &Val, right_flag: &Val, right: &V
   match (left, right) {
     (Val::Array(left_arr), Val::Array(right_arr)) => {
       if left_arr.elements.len() != right_arr.elements.len() {
-        could_not_merge(left, right);
+        return CouldNotMerge(left.clone(), right.clone()).to_dynamic_val();
       }
 
       return (0..left_arr.elements.len())
@@ -90,7 +92,7 @@ pub fn arithmetic_merge(left_flag: &Val, left: &Val, right_flag: &Val, right: &V
     return left.clone();
   }
 
-  could_not_merge(left, right)
+  CouldNotMerge(left.clone(), right.clone()).to_dynamic_val()
 }
 
 fn quick_val_eq(left: &Val, right: &Val) -> bool {
@@ -148,6 +150,77 @@ fn arithmetic_merge_map<K: std::cmp::Ord + Clone>(
   res
 }
 
-fn could_not_merge<T: std::fmt::Display>(left: &T, right: &T) -> ! {
-  panic!("Could not merge {} and {}", left, right);
+#[derive(Clone)]
+pub struct CouldNotMerge(pub Val, pub Val);
+
+impl ValTrait for CouldNotMerge {
+  fn typeof_(&self) -> valuescript_vm::vs_value::VsType {
+    VsType::Object
+  }
+
+  fn to_number(&self) -> f64 {
+    f64::NAN
+  }
+
+  fn to_index(&self) -> Option<usize> {
+    None
+  }
+
+  fn is_primitive(&self) -> bool {
+    false
+  }
+
+  fn is_truthy(&self) -> bool {
+    true
+  }
+
+  fn is_nullish(&self) -> bool {
+    false
+  }
+
+  fn bind(&self, _params: Vec<Val>) -> Option<Val> {
+    None
+  }
+
+  fn as_bigint_data(&self) -> Option<num_bigint::BigInt> {
+    None
+  }
+
+  fn as_array_data(&self) -> Option<std::rc::Rc<valuescript_vm::vs_array::VsArray>> {
+    None
+  }
+
+  fn as_class_data(&self) -> Option<std::rc::Rc<valuescript_vm::vs_class::VsClass>> {
+    None
+  }
+
+  fn load_function(&self) -> LoadFunctionResult {
+    LoadFunctionResult::NotAFunction
+  }
+
+  fn sub(&self, _key: &Val) -> Result<Val, Val> {
+    Ok(Val::Undefined)
+  }
+
+  fn has(&self, _key: &Val) -> Option<bool> {
+    Some(false)
+  }
+
+  fn submov(&mut self, _key: &Val, _value: Val) -> Result<(), Val> {
+    Err("Cannot assign subscript to CouldNotMerge".to_type_error())
+  }
+
+  fn pretty_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "CouldNotMerge({}, {})", self.0.pretty(), self.1.pretty())
+  }
+
+  fn codify(&self) -> String {
+    format!("CouldNotMerge({}, {})", self.0, self.1)
+  }
+}
+
+impl std::fmt::Display for CouldNotMerge {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "CouldNotMerge({}, {})", self.0, self.1)
+  }
 }
