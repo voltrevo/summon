@@ -1,0 +1,22 @@
+mod arithmetic_merge;
+mod bytecode;
+mod bytecode_decoder;
+mod bytecode_stack_frame;
+mod circuit;
+mod circuit_builder;
+mod circuit_signal;
+mod circuit_vm;
+mod circuit_vm_branch;
+mod compile;
+mod cs_function;
+mod generator;
+mod id_generator;
+mod make_generator_frame;
+mod resolve_entry_path;
+mod val_dynamic_downcast;
+
+pub use circuit::Circuit;
+pub use compile::compile;
+pub use compile::CompileErr;
+pub use compile::CompileOk;
+pub use compile::CompileResult;

@@ -14,7 +14,7 @@ export PATH="$PATH:$PWD/target/debug"
 ## Usage
 
 ```sh
-circuit-script main.ts
+csc main.ts
 ```
 
 This will generate the circuit in [bristol format](https://nigelsmart.github.io/MPC-Circuits/) at `output/circuit.txt` and a description of the inputs, outputs, and constants at `output/circuit_info.json`.
@@ -38,7 +38,7 @@ export default function main(input: number) {
 ```
 
 ```sh
-circuit-script examples/loopAdd.ts
+csc examples/loopAdd.ts
 ```
 
 ```

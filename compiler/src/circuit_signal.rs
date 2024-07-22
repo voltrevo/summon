@@ -9,7 +9,7 @@ use valuescript_vm::{
   LoadFunctionResult, ValTrait,
 };
 
-use crate::{id_generator::IdGenerator, val_dynamic_downcast};
+use crate::{id_generator::IdGenerator, val_dynamic_downcast::val_dynamic_downcast};
 use valuescript_vm::vs_value::VsType;
 
 #[derive(Clone)]

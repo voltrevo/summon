@@ -3,9 +3,15 @@ use std::{collections::HashMap, path::PathBuf};
 use serde_qs as qs;
 use url::Url;
 
-use valuescript_compiler::{Diagnostic, DiagnosticLevel};
+use valuescript_compiler::{Diagnostic, DiagnosticLevel, ResolvedPath};
 
-pub fn handle_diagnostics_cli(file_path: &String, diagnostics: &Vec<Diagnostic>) {
+pub fn handle_diagnostics_cli(diagnostics: &HashMap<ResolvedPath, Vec<Diagnostic>>) {
+  for (file_path, file_diagnostics) in diagnostics {
+    handle_file_diagnostics_cli(&file_path.path, file_diagnostics);
+  }
+}
+
+fn handle_file_diagnostics_cli(file_path: &String, diagnostics: &Vec<Diagnostic>) {
   let path = 'b: {
     if file_path == "(str)" {
       // TODO: Fix this hack

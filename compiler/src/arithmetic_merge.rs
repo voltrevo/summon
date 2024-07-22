@@ -8,7 +8,7 @@ use valuescript_vm::{
   LoadFunctionResult, ValTrait,
 };
 
-use crate::{circuit_signal::CircuitSignal, val_dynamic_downcast};
+use crate::{circuit_signal::CircuitSignal, val_dynamic_downcast::val_dynamic_downcast};
 
 /**
  * Merges two values after branching.

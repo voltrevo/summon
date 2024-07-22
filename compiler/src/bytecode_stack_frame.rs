@@ -16,7 +16,7 @@ use valuescript_vm::{vs_value::Val, StackFrameTrait};
 
 use crate::bytecode_decoder::{BytecodeDecoder, BytecodeType};
 use crate::circuit_signal::CircuitSignal;
-use crate::val_dynamic_downcast;
+use crate::val_dynamic_downcast::val_dynamic_downcast;
 
 #[derive(Clone)]
 pub struct ForkInfo {
