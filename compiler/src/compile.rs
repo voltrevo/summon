@@ -5,8 +5,8 @@ use valuescript_compiler::{asm, assemble, Diagnostic, ResolvedPath};
 use valuescript_vm::vs_value::{ToDynamicVal, Val, VsType};
 
 use crate::{
+  bristol_circuit::BristolCircuit,
   bytecode::{Bytecode, DecoderMaker},
-  circuit::Circuit,
   circuit_builder::CircuitBuilder,
   circuit_signal::{CircuitSignal, CircuitSignalData},
   circuit_vm::CircuitVM,
@@ -17,7 +17,7 @@ use crate::{
 };
 
 pub struct CompileOk {
-  pub circuit: Circuit,
+  pub circuit: BristolCircuit,
   pub diagnostics: HashMap<ResolvedPath, Vec<Diagnostic>>,
 }
 
@@ -45,7 +45,7 @@ where
   let info = generate_circuit_info(name, main_asm, output_ids, constants);
 
   Ok(CompileOk {
-    circuit: Circuit { info, bristol },
+    circuit: BristolCircuit { info, bristol },
     diagnostics,
   })
 }

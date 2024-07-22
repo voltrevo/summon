@@ -1,6 +1,6 @@
 use std::{fs, path::Path};
 
-use circuitscript_compiler::{compile, Circuit, CompileOk};
+use circuitscript_compiler::{compile, BristolCircuit, CompileOk};
 use handle_diagnostics_cli::handle_diagnostics_cli;
 use serde_json::to_string_pretty;
 
@@ -26,7 +26,7 @@ fn main() {
   handle_diagnostics_cli(diagnostics);
 
   let CompileOk {
-    circuit: Circuit { info, bristol },
+    circuit: BristolCircuit { info, bristol },
     diagnostics,
   } = compile_result.expect("Error should have caused earlier exit");
 

@@ -1,8 +1,8 @@
 mod arithmetic_merge;
+mod bristol_circuit;
 mod bytecode;
 mod bytecode_decoder;
 mod bytecode_stack_frame;
-mod circuit;
 mod circuit_builder;
 mod circuit_signal;
 mod circuit_vm;
@@ -13,10 +13,10 @@ mod generator;
 mod id_generator;
 mod make_generator_frame;
 mod resolve_entry_path;
-mod val_dynamic_downcast;
 mod tests;
+mod val_dynamic_downcast;
 
-pub use circuit::Circuit;
+pub use bristol_circuit::BristolCircuit;
 pub use compile::compile;
 pub use compile::CompileErr;
 pub use compile::CompileOk;

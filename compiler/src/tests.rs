@@ -7,7 +7,7 @@ mod tests_ {
     simulate, NumberU32,
   };
 
-  use crate::{compile, Circuit, CompileOk};
+  use crate::{compile, BristolCircuit, CompileOk};
 
   #[test]
   fn test_find_test_cases() {
@@ -22,7 +22,7 @@ mod tests_ {
       println!("Test {}: {:?} => {:?}", path, input, expected_output);
 
       let CompileOk {
-        circuit: Circuit { info, bristol },
+        circuit: BristolCircuit { info, bristol },
         diagnostics: _,
       } = compile(&path, |p| fs::read_to_string(p).map_err(|e| e.to_string()))
         .expect("Compile failed");
