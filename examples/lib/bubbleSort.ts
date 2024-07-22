@@ -3,11 +3,11 @@ export default function bubbleSort(values: number[]) {
   let right = values.length - 1;
 
   while (true) {
-    if (right - left > 1) {
+    if (right <= left) {
       break;
     }
 
-    for (let i = left; i < right - 1; i++) {
+    for (let i = left; i < right; i++) {
       if (values[i] > values[i + 1]) {
         const tmp = values[i];
         values[i] = values[i + 1];
@@ -17,11 +17,11 @@ export default function bubbleSort(values: number[]) {
 
     right--;
 
-    if (right - left > 1) {
+    if (right <= left) {
       break;
     }
 
-    for (let i = right - 2; i >= left; i--) {
+    for (let i = right - 1; i >= left; i--) {
       if (values[i] > values[i + 1]) {
         const tmp = values[i];
         values[i] = values[i + 1];

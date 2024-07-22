@@ -7,20 +7,20 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug executable 'circuit-script'",
+      "name": "Debug executable 'csc'",
       "cargo": {
         "args": [
           "build",
-          "--bin=circuit-script",
-          "--package=circuit-script"
+          "--bin=csc",
+          "--package=cli"
         ],
         "filter": {
-          "name": "circuit-script",
+          "name": "csc",
           "kind": "bin"
         }
       },
       "args": [
-        "foo.ts"
+        "examples/median11.ts"
       ],
       "cwd": "${workspaceFolder}"
     },
