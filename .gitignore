@@ -1,4 +1,4 @@
-/target
-/output
-/foo.*
-/bar.*
+target
+output
+foo.*
+bar.*
