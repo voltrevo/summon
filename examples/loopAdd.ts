@@ -1,3 +1,5 @@
+//! test [5] => [15]
+
 const iterations = 3;
 
 export default function main(input: number) {

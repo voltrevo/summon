@@ -14,6 +14,7 @@ mod id_generator;
 mod make_generator_frame;
 mod resolve_entry_path;
 mod val_dynamic_downcast;
+mod tests;
 
 pub use circuit::Circuit;
 pub use compile::compile;

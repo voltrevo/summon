@@ -15,13 +15,15 @@ use crate::{circuit_signal::CircuitSignal, val_dynamic_downcast::val_dynamic_dow
  *
  * Consider this code:
  *
- *     let x = input;
- *     
- *     if (cond) {
- *       x += x;
- *     }
- *     
- *     // merge here
+ * ```ts
+ * let x = input;
+ *
+ * if (cond) {
+ *   x += x;
+ * }
+ *
+ * // merge here
+ * ```
  *
  * Suppose `cond` and `input` are signals.
  *
