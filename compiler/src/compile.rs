@@ -1,12 +1,11 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use sim_circuit::arithmetic_circuit::{CircuitInfo, ConstantInfo};
 use valuescript_compiler::{asm, assemble, Diagnostic, ResolvedPath};
 use valuescript_vm::vs_value::{ToDynamicVal, Val, VsType};
 
 use crate::{
-  bristol_circuit::BristolCircuit,
   bytecode::{Bytecode, DecoderMaker},
+  circuit::Circuit,
   circuit_builder::CircuitBuilder,
   circuit_signal::{CircuitSignal, CircuitSignalData},
   circuit_vm::CircuitVM,
@@ -17,7 +16,7 @@ use crate::{
 };
 
 pub struct CompileOk {
-  pub circuit: BristolCircuit,
+  pub circuit: Circuit,
   pub diagnostics: HashMap<ResolvedPath, Vec<Diagnostic>>,
 }
 
@@ -41,11 +40,11 @@ where
 
   let (input_len, outputs) = run(main);
 
-  let (bristol, output_ids, constants) = generate_circuit(input_len, outputs);
-  let info = generate_circuit_info(name, main_asm, output_ids, constants);
+  let (output_ids, builder) = build(input_len, outputs);
+  let circuit = generate_circuit(name, main_asm, output_ids, builder);
 
   Ok(CompileOk {
-    circuit: BristolCircuit { info, bristol },
+    circuit,
     diagnostics,
   })
 }
@@ -151,78 +150,44 @@ fn run(main: Val) -> (usize, Vec<Val>) {
   }
 }
 
-fn generate_circuit(
-  input_len: usize,
-  outputs: Vec<Val>,
-) -> (Vec<String>, Vec<usize>, HashMap<usize, usize>) {
-  let mut bristol = Vec::<String>::new();
-
+fn build(input_len: usize, outputs: Vec<Val>) -> (Vec<usize>, CircuitBuilder) {
   let mut builder = CircuitBuilder::default();
   builder.include_inputs(input_len);
   let output_ids = builder.include_outputs(&outputs);
 
-  bristol.push(format!("{} {}", builder.gates.len(), builder.wire_count));
-  let mut input_line = input_len.to_string();
-
-  for _ in 0..input_len {
-    input_line.push_str(" 1");
-  }
-
-  bristol.push(input_line);
-
-  let mut output_line = outputs.len().to_string();
-
-  for _ in 0..outputs.len() {
-    output_line.push_str(" 1");
-  }
-
-  bristol.push(output_line);
-  bristol.push("".into());
-
-  bristol.extend(builder.gates);
-
-  (bristol, output_ids, builder.constants)
+  (output_ids, builder)
 }
 
-fn generate_circuit_info(
+fn generate_circuit(
   name: String,
   fn_: asm::Function,
   output_ids: Vec<usize>,
-  constants: HashMap<usize, usize>,
-) -> CircuitInfo {
-  let mut circuit_info = CircuitInfo {
-    input_name_to_wire_index: Default::default(),
-    constants: Default::default(),
-    output_name_to_wire_index: Default::default(),
-  };
-
+  builder: CircuitBuilder,
+) -> Circuit {
+  let mut inputs = HashMap::<String, usize>::new();
   for (i, reg) in fn_.parameters.iter().enumerate() {
-    circuit_info
-      .input_name_to_wire_index
-      .insert(reg.name.clone(), i as u32);
+    inputs.insert(reg.name.clone(), i);
   }
 
-  for (value, wire_id) in constants {
-    circuit_info.constants.insert(
-      format!("constant_{}", value),
-      ConstantInfo {
-        value: value.to_string(),
-        wire_index: wire_id as u32,
-      },
-    );
+  let mut constants = HashMap::<usize, usize>::new();
+  for (value, wire_id) in &builder.constants {
+    constants.insert(*wire_id, *value);
   }
 
+  let mut outputs = HashMap::<String, usize>::new();
   if output_ids.len() == 1 {
-    circuit_info
-      .output_name_to_wire_index
-      .insert(name, output_ids[0] as u32);
+    outputs.insert(name, output_ids[0]);
   } else {
     for (i, output_id) in output_ids.iter().enumerate() {
-      circuit_info
-        .output_name_to_wire_index
-        .insert(format!("{}[{}]", name, i), *output_id as u32);
+      outputs.insert(format!("{}[{}]", name, i), *output_id);
     }
   }
 
-  circuit_info
+  Circuit {
+    size: builder.wire_count,
+    inputs,
+    constants,
+    outputs,
+    gates: builder.gates,
+  }
 }

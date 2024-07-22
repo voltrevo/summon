@@ -26,7 +26,7 @@ fn main() {
   handle_diagnostics_cli(diagnostics);
 
   let CompileOk {
-    circuit: BristolCircuit { info, bristol },
+    circuit,
     diagnostics,
   } = compile_result.expect("Error should have caused earlier exit");
 
@@ -39,6 +39,8 @@ fn main() {
   }
 
   fs::create_dir(output_dir).unwrap();
+
+  let BristolCircuit { info, bristol } = circuit.to_bristol();
 
   fs::write("output/circuit.txt", bristol.join("\n")).unwrap();
   println!("output/circuit.txt");

@@ -11,4 +11,5 @@ valuescript_vm = { git = "https://github.com/voltrevo/ValueScript", rev = "9c628
 valuescript_common = { git = "https://github.com/voltrevo/ValueScript", rev = "9c6280c" }
 num-bigint = "0.4"
 num-traits = "0.2"
-sim-circuit = { git = "https://github.com/brech1/sim-circuit", rev = "2cd4d0a" }
+serde = "1.0"
+serde_json = "1.0"

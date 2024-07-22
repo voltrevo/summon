@@ -1,13 +1,16 @@
 use std::collections::HashMap;
 
 use num_traits::ToPrimitive;
-use valuescript_vm::{binary_op::BinaryOp, unary_op::UnaryOp, vs_value::Val, ValTrait};
+use valuescript_vm::{vs_value::Val, ValTrait};
 
-use crate::circuit_signal::{CircuitSignal, CircuitSignalData};
+use crate::{
+  circuit::Gate,
+  circuit_signal::{CircuitSignal, CircuitSignalData},
+};
 
 #[derive(Default)]
 pub struct CircuitBuilder {
-  pub gates: Vec<String>,
+  pub gates: Vec<Gate>,
   pub wire_count: usize,
   pub wires_included: HashMap<usize, usize>, // CircuitSignal.id -> wire_id
   pub constants: HashMap<usize, usize>,      // value -> wire_id
@@ -71,23 +74,22 @@ impl CircuitBuilder {
           let wire_id = self.wire_count;
           self.wire_count += 1;
 
-          let bristol_op_string = match &circuit_number.data {
+          let gate = match &circuit_number.data {
             CircuitSignalData::Input => panic!("Input should have been included earlier"),
-            CircuitSignalData::UnaryOp(unary_op, _) => to_bristol_unary_op(*unary_op),
-            CircuitSignalData::BinaryOp(binary_op, _, _) => to_bristol_binary_op(*binary_op),
+            CircuitSignalData::UnaryOp(op, _) => Gate::Unary {
+              op: *op,
+              input: dependent_ids[0],
+              output: wire_id,
+            },
+            CircuitSignalData::BinaryOp(op, _, _) => Gate::Binary {
+              op: *op,
+              left: dependent_ids[0],
+              right: dependent_ids[1],
+              output: wire_id,
+            },
           };
 
-          self.gates.push(format!(
-            "{} 1 {} {} {}",
-            dependent_ids.len(),
-            dependent_ids
-              .iter()
-              .map(|id| id.to_string())
-              .collect::<Vec<String>>()
-              .join(" "),
-            wire_id,
-            bristol_op_string,
-          ));
+          self.gates.push(gate);
 
           self.wires_included.insert(circuit_number.id, wire_id);
 
@@ -117,42 +119,4 @@ fn get_dependencies(val: &Val) -> Vec<Val> {
   }
 
   vec![]
-}
-
-fn to_bristol_unary_op(unary_op: UnaryOp) -> String {
-  match unary_op {
-    UnaryOp::Plus => "AUnaryAdd",
-    UnaryOp::Minus => "AUnarySub",
-    UnaryOp::Not => "ANot",
-    UnaryOp::BitNot => "ABitNot",
-  }
-  .to_string()
-}
-
-fn to_bristol_binary_op(binary_op: BinaryOp) -> String {
-  match binary_op {
-    BinaryOp::Plus => "AAdd",
-    BinaryOp::Minus => "ASub",
-    BinaryOp::Mul => "AMul",
-    BinaryOp::Div => "ADiv",
-    BinaryOp::Mod => "AMod",
-    BinaryOp::Exp => "AExp",
-    BinaryOp::LooseEq => "AEq",
-    BinaryOp::LooseNe => "ANeq",
-    BinaryOp::Eq => "AEq",
-    BinaryOp::Ne => "ANeq",
-    BinaryOp::And => "ABoolAnd",
-    BinaryOp::Or => "ABoolOr",
-    BinaryOp::Less => "ALt",
-    BinaryOp::LessEq => "ALEq",
-    BinaryOp::Greater => "AGt",
-    BinaryOp::GreaterEq => "AGEq",
-    BinaryOp::BitAnd => "ABitAnd",
-    BinaryOp::BitOr => "ABitOr",
-    BinaryOp::BitXor => "AXor",
-    BinaryOp::LeftShift => "AShiftL",
-    BinaryOp::RightShift => "AShiftR",
-    BinaryOp::RightShiftUnsigned => "AShiftR",
-  }
-  .to_string()
 }

@@ -1,8 +1,10 @@
 mod arithmetic_merge;
 mod bristol_circuit;
+mod bristol_op_strings;
 mod bytecode;
 mod bytecode_decoder;
 mod bytecode_stack_frame;
+mod circuit;
 mod circuit_builder;
 mod circuit_signal;
 mod circuit_vm;

@@ -2,15 +2,10 @@
 mod tests_ {
   use std::{collections::HashMap, fs, path::PathBuf};
 
-  use sim_circuit::{
-    arithmetic_circuit::{ArithmeticCircuit, CircuitInfo, ConstantInfo},
-    simulate, NumberU32,
-  };
-
-  use crate::{compile, BristolCircuit, CompileOk};
+  use crate::{compile, CompileOk};
 
   #[test]
-  fn test_find_test_cases() {
+  fn test_annotations() {
     let test_cases = find_test_cases("../examples");
 
     for TestCase {
@@ -21,37 +16,33 @@ mod tests_ {
     {
       println!("Test {}: {:?} => {:?}", path, input, expected_output);
 
-      // let CompileOk {
-      //   circuit: BristolCircuit { info, bristol },
-      //   diagnostics: _,
-      // } = compile(&path, |p| fs::read_to_string(p).map_err(|e| e.to_string()))
-      //   .expect("Compile failed");
+      let CompileOk {
+        circuit,
+        diagnostics: _,
+      } = compile(&path, |p| fs::read_to_string(p).map_err(|e| e.to_string()))
+        .expect("Compile failed");
 
-      // let arith_circuit =
-      //   ArithmeticCircuit::from_info_and_bristol_string(clone_circuit_info(&info), &bristol)
-      //     .expect("Failed to parse arithmetic circuit");
+      let inputs = circuit
+        .inputs
+        .iter()
+        .map(|(name, i)| (name.clone(), input[*i]))
+        .collect::<HashMap<_, _>>();
 
-      // let inputs = info
-      //   .input_name_to_wire_index
-      //   .iter()
-      //   .map(|(name, i)| (name.clone(), NumberU32(input[*i as usize] as u32)))
-      //   .collect::<HashMap<_, _>>();
+      let outputs = circuit.eval(&inputs);
 
-      // let outputs = simulate::<NumberU32>(&arith_circuit, &inputs).expect("Simulation failed");
+      let mut output_names = circuit.outputs.iter().collect::<Vec<_>>();
+      output_names.sort_by(|(_, id_a), (_, id_b)| id_a.cmp(id_b));
 
-      // let mut output_names = info.output_name_to_wire_index.iter().collect::<Vec<_>>();
-      // output_names.sort_by(|(_, id_a), (_, id_b)| id_a.cmp(id_b));
+      let output_name_to_index = output_names
+        .iter()
+        .enumerate()
+        .map(|(i, (name, _))| ((*name).clone(), i))
+        .collect::<HashMap<_, _>>();
 
-      // let output_name_to_index = output_names
-      //   .iter()
-      //   .enumerate()
-      //   .map(|(i, (name, _))| ((*name).clone(), i))
-      //   .collect::<HashMap<_, _>>();
-
-      // for (name, NumberU32(value)) in &outputs {
-      //   let wire_id = output_name_to_index[name];
-      //   assert_eq!(*value, expected_output[wire_id] as u32);
-      // }
+      for (name, value) in &outputs {
+        let wire_id = output_name_to_index[name];
+        assert_eq!(*value, expected_output[wire_id]);
+      }
     }
   }
 
@@ -126,27 +117,5 @@ mod tests_ {
     }
 
     res
-  }
-
-  fn clone_circuit_info(info: &CircuitInfo) -> CircuitInfo {
-    CircuitInfo {
-      input_name_to_wire_index: info.input_name_to_wire_index.clone(),
-      constants: {
-        let mut res = HashMap::<String, ConstantInfo>::new();
-
-        for (name, constant_info) in &info.constants {
-          res.insert(
-            name.clone(),
-            ConstantInfo {
-              value: constant_info.value.clone(),
-              wire_index: constant_info.wire_index,
-            },
-          );
-        }
-
-        res
-      },
-      output_name_to_wire_index: info.output_name_to_wire_index.clone(),
-    }
   }
 }
