@@ -154,35 +154,32 @@ fn run(main: Val) -> (usize, Vec<Val>) {
 fn generate_circuit(
   input_len: usize,
   outputs: Vec<Val>,
-) -> (String, Vec<usize>, HashMap<usize, usize>) {
-  let mut bristol = String::new();
+) -> (Vec<String>, Vec<usize>, HashMap<usize, usize>) {
+  let mut bristol = Vec::<String>::new();
 
   let mut builder = CircuitBuilder::default();
   builder.include_inputs(input_len);
   let output_ids = builder.include_outputs(&outputs);
 
-  bristol.push_str(&format!("{} {}\n", builder.gates.len(), builder.wire_count));
-  bristol.push_str(&input_len.to_string());
+  bristol.push(format!("{} {}", builder.gates.len(), builder.wire_count));
+  let mut input_line = input_len.to_string();
 
   for _ in 0..input_len {
-    bristol.push_str(" 1");
+    input_line.push_str(" 1");
   }
 
-  bristol.push('\n');
+  bristol.push(input_line);
 
-  bristol.push_str(&outputs.len().to_string());
+  let mut output_line = outputs.len().to_string();
 
   for _ in 0..outputs.len() {
-    bristol.push_str(" 1");
+    output_line.push_str(" 1");
   }
 
-  bristol.push('\n');
-  bristol.push('\n');
+  bristol.push(output_line);
+  bristol.push("".into());
 
-  for gate in builder.gates {
-    bristol.push_str(&gate);
-    bristol.push('\n');
-  }
+  bristol.extend(builder.gates);
 
   (bristol, output_ids, builder.constants)
 }

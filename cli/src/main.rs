@@ -40,7 +40,7 @@ fn main() {
 
   fs::create_dir(output_dir).unwrap();
 
-  fs::write("output/circuit.txt", bristol).unwrap();
+  fs::write("output/circuit.txt", bristol.join("\n")).unwrap();
   println!("output/circuit.txt");
 
   fs::write("output/circuit_info.json", to_string_pretty(&info).unwrap()).unwrap();
