@@ -1,14 +1,18 @@
 use std::collections::BTreeMap;
 
 use valuescript_vm::{
-  operations::{op_mul, op_plus, op_triple_eq_impl},
+  operations::{op_minus, op_mul, op_plus, op_triple_eq_impl},
   type_error_builtin::ToTypeError,
+  unary_op::UnaryOp,
   vs_object::VsObject,
   vs_value::{ToDynamicVal, ToVal, Val, VsType},
   LoadFunctionResult, ValTrait,
 };
 
-use crate::{circuit_signal::CircuitSignal, val_dynamic_downcast::val_dynamic_downcast};
+use crate::{
+  circuit_signal::{CircuitSignal, CircuitSignalData},
+  val_dynamic_downcast::val_dynamic_downcast,
+};
 
 /**
  * Merges two values after branching.
@@ -43,12 +47,75 @@ pub fn arithmetic_merge(left_flag: &Val, left: &Val, right_flag: &Val, right: &V
     return left.clone();
   }
 
-  if is_number_or_circuit_number(left) && is_number_or_circuit_number(right) {
-    return op_plus(
+  arithmetic_merge_impl(&gen_direct_merge(left_flag, right_flag), left, right)
+}
+
+fn gen_direct_merge<'a>(
+  left_flag: &'a Val,
+  right_flag: &'a Val,
+) -> Box<dyn Fn(&'a Val, &'a Val) -> Val + 'a> {
+  if let Some(direct_merge) = optimized_direct_merge(false, left_flag, right_flag) {
+    return direct_merge;
+  }
+
+  if let Some(direct_merge) = optimized_direct_merge(true, left_flag, right_flag) {
+    return direct_merge;
+  }
+
+  Box::new(|left, right| {
+    op_plus(
       &op_mul(left_flag, left).unwrap(),
       &op_mul(right_flag, right).unwrap(),
     )
-    .unwrap();
+    .unwrap()
+  })
+}
+
+fn optimized_direct_merge<'a>(
+  swap: bool,
+  left_flag: &'a Val,
+  right_flag: &'a Val,
+) -> Option<Box<dyn Fn(&'a Val, &'a Val) -> Val + 'a>> {
+  let (left_flag, right_flag) = if swap {
+    (right_flag, left_flag)
+  } else {
+    (left_flag, right_flag)
+  };
+
+  if let Some(left_flag) = val_dynamic_downcast::<CircuitSignal>(left_flag) {
+    if let CircuitSignalData::UnaryOp(UnaryOp::Not, input) = &left_flag.data {
+      if quick_val_eq(input, right_flag) {
+        // left_flag = 1 - right_flag
+        // out = left_flag * left + right_flag * right
+        //     = (1 - right_flag) * left + right_flag * right
+        //     = left + right_flag * (right - left)
+        return Some(Box::new(move |left, right| {
+          let (left, right) = if swap { (right, left) } else { (left, right) };
+
+          op_plus(
+            left,
+            &op_mul(right_flag, &op_minus(right, left).unwrap()).unwrap(),
+          )
+          .unwrap()
+        }));
+      }
+    }
+  }
+
+  None
+}
+
+fn arithmetic_merge_impl<'a>(
+  direct_merge: &impl Fn(&'a Val, &'a Val) -> Val,
+  left: &'a Val,
+  right: &'a Val,
+) -> Val {
+  if quick_val_eq(left, right) {
+    return left.clone();
+  }
+
+  if is_number_or_circuit_number(left) && is_number_or_circuit_number(right) {
+    return direct_merge(left, right);
   }
 
   match (left, right) {
@@ -58,32 +125,15 @@ pub fn arithmetic_merge(left_flag: &Val, left: &Val, right_flag: &Val, right: &V
       }
 
       return (0..left_arr.elements.len())
-        .map(|i| {
-          arithmetic_merge(
-            left_flag,
-            &left_arr.elements[i],
-            right_flag,
-            &right_arr.elements[i],
-          )
-        })
+        .map(|i| arithmetic_merge_impl(direct_merge, &left_arr.elements[i], &right_arr.elements[i]))
         .collect::<Vec<_>>()
         .to_val();
     }
     (Val::Object(left), Val::Object(right)) => {
       return VsObject {
-        string_map: arithmetic_merge_map(
-          left_flag,
-          &left.string_map,
-          right_flag,
-          &right.string_map,
-        ),
-        symbol_map: arithmetic_merge_map(
-          left_flag,
-          &left.symbol_map,
-          right_flag,
-          &right.symbol_map,
-        ),
-        prototype: arithmetic_merge(left_flag, &left.prototype, right_flag, &right.prototype),
+        string_map: arithmetic_merge_map(direct_merge, &left.string_map, &right.string_map),
+        symbol_map: arithmetic_merge_map(direct_merge, &left.symbol_map, &right.symbol_map),
+        prototype: arithmetic_merge_impl(direct_merge, &left.prototype, &right.prototype),
       }
       .to_val()
     }
@@ -127,11 +177,10 @@ fn is_number_or_circuit_number(val: &Val) -> bool {
   }
 }
 
-fn arithmetic_merge_map<K: std::cmp::Ord + Clone>(
-  left_flag: &Val,
-  left: &BTreeMap<K, Val>,
-  right_flag: &Val,
-  right: &BTreeMap<K, Val>,
+fn arithmetic_merge_map<'a, K: std::cmp::Ord + Clone>(
+  direct_merge: &impl Fn(&'a Val, &'a Val) -> Val,
+  left: &'a BTreeMap<K, Val>,
+  right: &'a BTreeMap<K, Val>,
 ) -> BTreeMap<K, Val> {
   if left.len() != right.len() {
     panic!("Could not merge");
@@ -143,7 +192,7 @@ fn arithmetic_merge_map<K: std::cmp::Ord + Clone>(
     match right.get(k) {
       Some(right_value) => res.insert(
         k.clone(),
-        arithmetic_merge(left_flag, left_value, right_flag, right_value),
+        arithmetic_merge_impl(direct_merge, left_value, right_value),
       ),
       None => panic!("Could not merge"),
     };
