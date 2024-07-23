@@ -23,6 +23,21 @@ const winConditions = [
 ];
 
 export default function main(player1: number, player2: number) {
+  const player1Invalid = player1 < 1 || player1 > 5;
+  const player2Invalid = player2 < 1 || player2 > 5;
+
+  if (player1Invalid && player2Invalid) {
+    return 0;
+  }
+
+  if (player1Invalid) {
+    return 2;
+  }
+
+  if (player2Invalid) {
+    return 1;
+  }
+
   for (const [winningChoice, losingChoice] of winConditions) {
     if (player1 === winningChoice && player2 === losingChoice) {
       return 1;
