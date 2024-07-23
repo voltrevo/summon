@@ -5,7 +5,7 @@ use valuescript_vm::{
   binary_op::BinaryOp,
   type_error_builtin::ToTypeError,
   unary_op::UnaryOp,
-  vs_value::{ToDynamicVal, Val},
+  vs_value::{ToDynamicVal, ToVal, Val},
   LoadFunctionResult, ValTrait,
 };
 
@@ -127,11 +127,19 @@ impl ValTrait for CircuitSignal {
           if *left == 1.0 {
             return Some(Ok(right.clone()));
           }
+
+          if *left == 0.0 {
+            return Some(Ok(0f64.to_val()));
+          }
         }
 
         if let Val::Number(right) = right {
           if *right == 1.0 {
             return Some(Ok(left.clone()));
+          }
+
+          if *right == 0.0 {
+            return Some(Ok(0f64.to_val()));
           }
         }
       }
