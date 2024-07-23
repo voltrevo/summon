@@ -66,6 +66,52 @@ csc examples/loopAdd.ts
 }
 ```
 
+## Signal-Dependent Branching
+
+Building a circuit from a program with a fixed path is relatively straightforward. The real power
+of CircuitScript is its ability to handle signal-dependent branches - where the program follows a
+different path depending on the input. For example:
+
+```ts
+// examples/greaterThan10.ts
+
+export default function main(x: number) {
+  if (x > 10) {
+    return 10;
+  }
+
+  return 0;
+}
+```
+
+```
+2 1 0 1 2 AGt
+2 1 2 1 3 AMul
+```
+
+Above, the constant 10 is used for wire 1, so the circuit is `output = (x > 10) * 10`.
+
+CircuitScript can also handle more complex branching, so you can use loops and even things like
+`continue`, `break`, and `switch`. You can also conditionally throw exceptions as long as you
+catch them.
+
+To achieve this, CircuitScript has a general solution to handle any conditional jump instruction.
+A conditional jump generates a new evaluation branch, and each branch tracks a multiplier signal.
+CircuitScript dynamically manages these branches and merges them when they reach the same location.
+
+However, it is easy to write programs which branch indefinitely and never consolidate into a single
+fixed circuit. Programs like this become infinite loops:
+
+```ts
+for (let i = 0; i < input; i++) {
+  sum += i;
+}
+```
+
+A traditional runtime can terminate shortly after `i` reaches `input`, but because `input` isn't
+known during compilation, CircuitScript will get stuck in a loop as it adds more and more circuitry
+to handle larger and larger values of `input` forever.
+
 ## Limitations
 
 - You can't use a signal as an array index
