@@ -1,7 +1,7 @@
-import bubbleSort from "./bubbleSort.ts";
+import batcherSort from "./batcherSort.ts";
 
 export default function median(input: number[]) {
-  const sorted = bubbleSort(input);
+  const sorted = batcherSort(input); // faster than bubbleSort(input)
 
   const mid = (input.length - 1) / 2;
 
