@@ -20,7 +20,7 @@
         }
       },
       "args": [
-        "examples/median11.ts"
+        "examples/nthPrime.ts"
       ],
       "cwd": "${workspaceFolder}"
     },

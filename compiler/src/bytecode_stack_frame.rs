@@ -800,6 +800,7 @@ impl StackFrameTrait for BytecodeStackFrame {
       None => {}
       Some(tt) => {
         self.registers[tt] = call_result.this;
+        self.this_target = None;
       }
     };
 
@@ -807,6 +808,7 @@ impl StackFrameTrait for BytecodeStackFrame {
       None => {}
       Some(rt) => {
         self.registers[rt] = call_result.return_;
+        self.return_target = None;
       }
     };
   }

@@ -143,6 +143,36 @@ impl ValTrait for CircuitSignal {
           }
         }
       }
+      BinaryOp::Or => {
+        if left.typeof_() == VsType::Bool && right.typeof_() == VsType::Bool {
+          match left {
+            Val::Bool(true) => return Some(Ok(true.to_val())),
+            Val::Bool(false) => return Some(Ok(right.clone())),
+            _ => {}
+          };
+
+          match right {
+            Val::Bool(true) => return Some(Ok(true.to_val())),
+            Val::Bool(false) => return Some(Ok(left.clone())),
+            _ => {}
+          }
+        }
+      }
+      BinaryOp::And => {
+        if left.typeof_() == VsType::Bool && right.typeof_() == VsType::Bool {
+          match left {
+            Val::Bool(true) => return Some(Ok(right.clone())),
+            Val::Bool(false) => return Some(Ok(false.to_val())),
+            _ => {}
+          };
+
+          match right {
+            Val::Bool(true) => return Some(Ok(left.clone())),
+            Val::Bool(false) => return Some(Ok(false.to_val())),
+            _ => {}
+          }
+        }
+      }
       _ => {}
     }
 

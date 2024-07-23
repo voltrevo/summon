@@ -114,7 +114,7 @@ fn arithmetic_merge_impl<'a>(
     return left.clone();
   }
 
-  if is_number_or_circuit_number(left) && is_number_or_circuit_number(right) {
+  if is_circuit_ish(left) && is_circuit_ish(right) {
     return direct_merge(left, right);
   }
 
@@ -140,7 +140,7 @@ fn arithmetic_merge_impl<'a>(
     _ => {}
   };
 
-  if op_triple_eq_impl(left, right).unwrap() {
+  if let Ok(true) = op_triple_eq_impl(left, right) {
     return left.clone();
   }
 
@@ -169,8 +169,9 @@ fn quick_val_eq(left: &Val, right: &Val) -> bool {
   }
 }
 
-fn is_number_or_circuit_number(val: &Val) -> bool {
+fn is_circuit_ish(val: &Val) -> bool {
   match val {
+    Val::Bool(_) => true,
     Val::Number(_) => true,
     Val::Dynamic(_) => val_dynamic_downcast::<CircuitSignal>(val).is_some(),
     _ => false,
