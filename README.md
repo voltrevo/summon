@@ -115,3 +115,13 @@ to handle larger and larger values of `input` forever.
 ## Limitations
 
 - You can't use a signal as an array index
+
+## Exercises
+
+If you'd like to try your hand at CircuitScript but you're not sure where to start, I have prepared
+some exercises you might find interesting:
+- [Check Supermajority](./examples/exercises/checkSuperMajority.ts)
+- [Approval Voting](./examples/exercises/approvalVoting.ts)
+- [Sneaky Tic-Tac-Toe](./examples/exercises/sneakyTicTacToe.ts)
+- [Asset Swap](./examples/exercises/assetSwap.ts)
+- [Poker Hands](./examples/exercises/pokerHands.ts)
