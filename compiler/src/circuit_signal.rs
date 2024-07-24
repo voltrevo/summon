@@ -242,7 +242,7 @@ fn typeof_(data: &CircuitSignalData) -> VsType {
       BinaryOp::And | BinaryOp::Or => match (left.typeof_(), right.typeof_()) {
         (VsType::Number, VsType::Number) => VsType::Number,
         (VsType::Bool, VsType::Bool) => VsType::Bool,
-        _ => panic!("Incompatible types"),
+        (left, right) => panic!("Incompatible types {} {}", left, right),
       },
       BinaryOp::Less => VsType::Bool,
       BinaryOp::LessEq => VsType::Bool,

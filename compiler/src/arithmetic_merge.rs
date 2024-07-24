@@ -43,6 +43,9 @@ use crate::{
  * If the structure is different, we abort with a compilation error.
  */
 pub fn arithmetic_merge(left_flag: &Val, left: &Val, right_flag: &Val, right: &Val) -> Val {
+  assert!(left_flag.typeof_() == VsType::Bool);
+  assert!(right_flag.typeof_() == VsType::Bool);
+
   if quick_val_eq(left, right) {
     return left.clone();
   }
@@ -105,6 +108,43 @@ fn optimized_direct_merge<'a>(
   None
 }
 
+fn set_type(val: &Val, type_: VsType) -> Val {
+  if val.typeof_() == type_ {
+    return val.clone();
+  }
+
+  match val {
+    Val::Bool(b) => match type_ {
+      VsType::Number => match b {
+        true => Val::Number(1.0),
+        false => Val::Number(0.0),
+      },
+      _ => panic!("Unexpected type_ {}", type_),
+    },
+    Val::Number(n) => match type_ {
+      VsType::Bool => {
+        if *n == 1.0 {
+          Val::Bool(true)
+        } else if *n == 0.0 {
+          Val::Bool(false)
+        } else {
+          panic!("Cannot convert to bool: {}", n)
+        }
+      }
+      _ => panic!("Unexpected type_ {}", type_),
+    },
+    Val::Dynamic(dynamic) => match dynamic.as_any().downcast_ref::<CircuitSignal>() {
+      Some(signal) => {
+        let mut signal = signal.clone();
+        signal.type_ = type_;
+        signal.to_dynamic_val()
+      }
+      _ => panic!("Unexpected non-signal dynamic"),
+    },
+    _ => panic!("Unexpected val case"),
+  }
+}
+
 fn arithmetic_merge_impl<'a>(
   direct_merge: &impl Fn(&'a Val, &'a Val) -> Val,
   left: &'a Val,
@@ -115,7 +155,11 @@ fn arithmetic_merge_impl<'a>(
   }
 
   if is_circuit_ish(left) && is_circuit_ish(right) {
-    return direct_merge(left, right);
+    let type_ = left.typeof_();
+    assert!(right.typeof_() == type_);
+    assert!(type_ == VsType::Bool || type_ == VsType::Number);
+
+    return set_type(&direct_merge(left, right), type_);
   }
 
   match (left, right) {
@@ -267,7 +311,7 @@ impl ValTrait for CouldNotMerge {
   }
 
   fn codify(&self) -> String {
-    format!("CouldNotMerge({}, {})", self.0, self.1)
+    format!("CouldNotMerge({}, {})", self.0.codify(), self.1.codify())
   }
 }
 

@@ -43,6 +43,19 @@ impl CircuitBuilder {
 
   pub fn include_val(&mut self, val: &Val) -> usize {
     match val {
+      Val::Bool(bool) => {
+        let value = if *bool { 1usize } else { 0usize };
+
+        if let Some(wire_id) = self.constants.get(&value) {
+          return *wire_id;
+        }
+
+        let wire_id = self.wire_count;
+        self.wire_count += 1;
+        self.constants.insert(value, wire_id);
+
+        wire_id
+      }
       Val::Number(number) => {
         if *number != number.trunc() {
           panic!("Cannot use non-integer constant");

@@ -37,7 +37,7 @@ impl CircuitVM {
     }
 
     self.branch = CircuitVMBranch {
-      flag: 1f64.to_val(),
+      flag: true.to_val(),
       frame: Rc::new(frame),
       stack: vec![Rc::new(Box::new(FirstStackFrame::new()))],
       alt_branch: None,
@@ -129,7 +129,7 @@ impl CircuitVM {
               let mut new_frame = Rc::new(Box::new(new_frame) as Box<dyn StackFrameTrait>);
 
               std::mem::swap(&mut self.branch.frame, &mut new_frame);
-              self.branch.flag = 1f64.to_val();
+              self.branch.flag = true.to_val();
 
               self.alt_branches.pop();
 
@@ -173,7 +173,7 @@ impl CircuitVM {
               }
 
               current_frame.registers = new_registers;
-              self.branch.flag = 1f64.to_val();
+              self.branch.flag = true.to_val();
 
               self.alt_branches.pop();
 

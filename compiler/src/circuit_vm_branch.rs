@@ -3,7 +3,7 @@ use std::mem::take;
 use std::rc::Rc;
 
 use valuescript_vm::internal_error_builtin::ToInternalError;
-use valuescript_vm::operations::op_mul;
+use valuescript_vm::operations::op_and;
 use valuescript_vm::vs_value::{ToVal, Val};
 use valuescript_vm::{FirstStackFrame, FrameStepOk, StackFrame};
 
@@ -21,7 +21,7 @@ pub struct CircuitVMBranch {
 impl Default for CircuitVMBranch {
   fn default() -> Self {
     CircuitVMBranch {
-      flag: 1f64.to_val(),
+      flag: true.to_val(),
       frame: Rc::new(Box::new(FirstStackFrame::new())),
       stack: Default::default(),
       alt_branch: None,
@@ -50,8 +50,8 @@ impl CircuitVMBranch {
           if let Some(fork_info) = take(&mut frame.fork_info) {
             let mut alt_branch = self.clone();
 
-            self.flag = op_mul(&self.flag, &fork_info.flag).unwrap();
-            alt_branch.flag = op_mul(&alt_branch.flag, &fork_info.alt_flag).unwrap();
+            self.flag = op_and(&self.flag, &fork_info.flag).unwrap();
+            alt_branch.flag = op_and(&alt_branch.flag, &fork_info.alt_flag).unwrap();
             alt_branch.frame = Rc::new(Box::new(fork_info.alt_frame));
 
             self.alt_branch = Some(Box::new(alt_branch));
