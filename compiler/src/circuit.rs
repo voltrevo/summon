@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{cmp::max, collections::HashMap};
 
 use valuescript_vm::{binary_op::BinaryOp, unary_op::UnaryOp};
 
@@ -65,6 +65,30 @@ impl Circuit {
     }
 
     res
+  }
+
+  pub fn depth(&self) -> usize {
+    let mut wire_depths = vec![0usize; self.size];
+
+    for gate in &self.gates {
+      match gate {
+        Gate::Unary {
+          op: _,
+          input,
+          output,
+        } => wire_depths[*output] = 1 + wire_depths[*input],
+        Gate::Binary {
+          op: _,
+          left,
+          right,
+          output,
+        } => wire_depths[*output] = 1 + max(wire_depths[*left], wire_depths[*right]),
+      }
+    }
+
+    let max_depth = wire_depths.iter().fold(0, |a, b| max(a, *b));
+
+    max_depth
   }
 
   pub fn to_bristol(&self) -> BristolCircuit {

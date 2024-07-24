@@ -32,6 +32,13 @@ fn main() {
 
   handle_diagnostics_cli(&diagnostics);
 
+  println!(
+    "Wires: {}, Gates: {}, Depth: {}",
+    circuit.size,
+    circuit.gates.len(),
+    circuit.depth()
+  );
+
   let output_dir = Path::new("output");
 
   if output_dir.exists() {
