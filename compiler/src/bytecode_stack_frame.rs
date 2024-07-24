@@ -143,7 +143,10 @@ impl BytecodeStackFrame {
     } = self;
 
     let self_fields = (
-      decoder.pos,
+      match decoder.peek_type() {
+        BytecodeType::End => usize::MAX,
+        _ => decoder.pos,
+      },
       registers.len(),
       const_this,
       param_start,
@@ -166,7 +169,10 @@ impl BytecodeStackFrame {
     } = other;
 
     let other_fields = (
-      decoder.pos,
+      match decoder.peek_type() {
+        BytecodeType::End => usize::MAX,
+        _ => decoder.pos,
+      },
       registers.len(),
       const_this,
       param_start,

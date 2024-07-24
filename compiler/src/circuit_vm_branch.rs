@@ -7,6 +7,7 @@ use valuescript_vm::operations::op_mul;
 use valuescript_vm::vs_value::{ToVal, Val};
 use valuescript_vm::{FirstStackFrame, FrameStepOk, StackFrame};
 
+use crate::bytecode_decoder::BytecodeType;
 use crate::bytecode_stack_frame::BytecodeStackFrame;
 
 #[derive(Clone)]
@@ -119,9 +120,18 @@ impl Ord for CircuitVMBranch {
       other.frame.as_any().downcast_ref::<BytecodeStackFrame>(),
     ) {
       (Some(self_frame), Some(other_frame)) => {
-        // We prefer working on an earlier bytecode position, but we have a max-heap so we need to
-        // reverse the order so that the earlier position will be higher priority.
-        other_frame.decoder.pos.cmp(&self_frame.decoder.pos)
+        match (
+          self_frame.decoder.peek_type(),
+          other_frame.decoder.peek_type(),
+        ) {
+          (BytecodeType::End, BytecodeType::End) => Ordering::Equal,
+          (BytecodeType::End, _) => Ordering::Less,
+          (_, BytecodeType::End) => Ordering::Greater,
+
+          // We prefer working on an earlier bytecode position, but we have a max-heap so we need to
+          // reverse the order so that the earlier position will be higher priority.
+          _ => other_frame.decoder.pos.cmp(&self_frame.decoder.pos),
+        }
       }
       // No preference for non-bytecode frames
       _ => Ordering::Equal,
