@@ -115,6 +115,9 @@ to handle larger and larger values of `input` forever.
 ## Limitations
 
 - You can't use a signal as an array index
+- Compile-time number operations use f64
+- Math functions don't work with signals
+  - You have to write your own versions of `Math.min`, `Math.max`, etc
 
 ## Exercises
 
