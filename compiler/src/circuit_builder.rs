@@ -48,7 +48,11 @@ impl CircuitBuilder {
           panic!("Cannot use non-integer constant");
         }
 
-        let value = number.to_usize().unwrap();
+        let value = if *number < 0.0 {
+          usize::MAX - ((-number).to_usize().unwrap() - 1)
+        } else {
+          number.to_usize().unwrap()
+        };
 
         if let Some(wire_id) = self.constants.get(&value) {
           return *wire_id;
