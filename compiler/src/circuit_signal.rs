@@ -3,6 +3,7 @@ use std::{cell::RefCell, rc::Rc};
 use num_bigint::BigInt;
 use valuescript_vm::{
   binary_op::BinaryOp,
+  operations::op_or,
   type_error_builtin::ToTypeError,
   unary_op::UnaryOp,
   vs_value::{ToDynamicVal, ToVal, Val},
@@ -144,6 +145,26 @@ impl ValTrait for CircuitSignal {
         }
       }
       BinaryOp::Or => {
+        if related_by_negation(left, right) {
+          return Some(Ok(true.to_val()));
+        }
+
+        if let Some((y, a, b)) = common_and(left, right) {
+          // (y && a) || (y && b) => y && (a || b)
+
+          return Some(op_or(a, b).map(|a_or_b| {
+            CircuitSignal::new(
+              &y.id_generator,
+              None,
+              CircuitSignalData::BinaryOp(BinaryOp::And, y.clone().to_dynamic_val(), a_or_b),
+            )
+            .to_dynamic_val()
+          }));
+        }
+
+        // TODO: (y && a) || (y && b) => y && (a || b)
+        //       (y && a) || (y && !a) => y && (a || !a) => y
+
         if left.typeof_() == VsType::Bool && right.typeof_() == VsType::Bool {
           match left {
             Val::Bool(true) => return Some(Ok(true.to_val())),
@@ -210,6 +231,60 @@ impl ValTrait for CircuitSignal {
 
   fn codify(&self) -> String {
     "[CircuitSignal]".into()
+  }
+}
+
+fn related_by_negation(left: &Val, right: &Val) -> bool {
+  if let Some((left, right)) = both_circuit_signals(left, right) {
+    if let CircuitSignalData::UnaryOp(UnaryOp::Not, not_left) = &left.data {
+      if let Some(not_left) = val_dynamic_downcast::<CircuitSignal>(not_left) {
+        if not_left.id == right.id {
+          return true;
+        }
+      }
+    }
+
+    if let CircuitSignalData::UnaryOp(UnaryOp::Not, not_right) = &right.data {
+      if let Some(not_right) = val_dynamic_downcast::<CircuitSignal>(not_right) {
+        if not_right.id == left.id {
+          return true;
+        }
+      }
+    }
+  }
+
+  false
+}
+
+fn common_and<'a>(left: &'a Val, right: &'a Val) -> Option<(&'a CircuitSignal, &'a Val, &'a Val)> {
+  if let Some((left, right)) = both_circuit_signals(left, right) {
+    if let (
+      CircuitSignalData::BinaryOp(BinaryOp::And, left_lhs, left_rhs),
+      CircuitSignalData::BinaryOp(BinaryOp::And, right_lhs, right_rhs),
+    ) = (&left.data, &right.data)
+    {
+      if let Some((left_lhs, right_lhs)) = both_circuit_signals(left_lhs, right_lhs) {
+        if left_lhs.id == right_lhs.id {
+          return Some((left_lhs, left_rhs, right_rhs));
+        }
+      }
+    }
+  }
+
+  None
+}
+
+fn both_circuit_signals<'a>(
+  left: &'a Val,
+  right: &'a Val,
+) -> Option<(&'a CircuitSignal, &'a CircuitSignal)> {
+  if let (Some(left), Some(right)) = (
+    val_dynamic_downcast::<CircuitSignal>(left),
+    val_dynamic_downcast::<CircuitSignal>(right),
+  ) {
+    Some((left, right))
+  } else {
+    None
   }
 }
 

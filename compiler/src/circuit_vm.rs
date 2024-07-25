@@ -2,6 +2,7 @@ use std::{cmp::Ordering, collections::BinaryHeap, mem::take, rc::Rc};
 
 use valuescript_vm::{
   internal_error_builtin::ToInternalError,
+  operations::op_or,
   vs_value::{ToVal, Val},
   CallResult, FirstStackFrame, LoadFunctionResult, StackFrameTrait, ValTrait,
 };
@@ -173,7 +174,7 @@ impl CircuitVM {
               }
 
               current_frame.registers = new_registers;
-              self.branch.flag = true.to_val();
+              self.branch.flag = op_or(&self.branch.flag, &alt_branch.flag).unwrap();
 
               self.alt_branches.pop();
 
