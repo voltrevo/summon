@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize)]
 pub struct BristolCircuit {
   pub info: CircuitInfo,
-  pub bristol: Vec<String>,
+  pub bristol: String,
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]

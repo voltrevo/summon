@@ -164,7 +164,7 @@ impl Circuit {
         constants,
         output_name_to_wire_index,
       },
-      bristol,
+      bristol: bristol.join("\n"),
     }
   }
 }

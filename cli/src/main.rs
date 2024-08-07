@@ -51,7 +51,7 @@ fn main() {
 
   let BristolCircuit { info, bristol } = circuit.to_bristol();
 
-  fs::write("output/circuit.txt", bristol.join("\n")).unwrap();
+  fs::write("output/circuit.txt", bristol).unwrap();
   println!("output/circuit.txt");
 
   fs::write("output/circuit_info.json", to_string_pretty(&info).unwrap()).unwrap();
