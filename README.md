@@ -125,6 +125,7 @@ If you'd like to try your hand at CircuitScript but you're not sure where to sta
 some exercises you might find interesting:
 - [Check Supermajority](./examples/exercises/checkSuperMajority.ts)
 - [Approval Voting](./examples/exercises/approvalVoting.ts)
+- TODO: exercise with in-between difficulty
 - [Sneaky Tic-Tac-Toe](./examples/exercises/sneakyTicTacToe.ts)
 - [Asset Swap](./examples/exercises/assetSwap.ts)
 - [Poker Hands](./examples/exercises/pokerHands.ts)
