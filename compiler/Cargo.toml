@@ -1,5 +1,5 @@
 [package]
-name = "circuitscript_compiler"
+name = "summon_compiler"
 version = "0.1.0"
 edition = "2021"
 

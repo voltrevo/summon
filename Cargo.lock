@@ -227,26 +227,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "circuitscript_compiler"
-version = "0.1.0"
-dependencies = [
- "num-bigint",
- "num-traits",
- "serde",
- "serde_json",
- "valuescript_common",
- "valuescript_compiler",
- "valuescript_vm",
-]
-
-[[package]]
 name = "cli"
 version = "0.1.0"
 dependencies = [
- "circuitscript_compiler",
  "serde",
  "serde_json",
  "serde_qs",
+ "summon_compiler",
  "url",
  "valuescript_compiler",
 ]
@@ -1482,6 +1469,19 @@ dependencies = [
  "quote",
  "rustversion",
  "syn 1.0.91",
+]
+
+[[package]]
+name = "summon_compiler"
+version = "0.1.0"
+dependencies = [
+ "num-bigint",
+ "num-traits",
+ "serde",
+ "serde_json",
+ "valuescript_common",
+ "valuescript_compiler",
+ "valuescript_vm",
 ]
 
 [[package]]

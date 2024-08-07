@@ -1,8 +1,8 @@
 use std::{fs, path::Path};
 
-use circuitscript_compiler::{compile, BristolCircuit, CompileOk};
 use handle_diagnostics_cli::handle_diagnostics_cli;
 use serde_json::to_string_pretty;
+use summon_compiler::{compile, BristolCircuit, CompileOk};
 
 mod handle_diagnostics_cli;
 
@@ -10,7 +10,7 @@ fn main() {
   let args: Vec<String> = std::env::args().collect();
 
   if args.len() != 2 {
-    eprintln!("Usage: csc main.ts");
+    eprintln!("Usage: summonc main.ts");
     std::process::exit(1);
   }
 

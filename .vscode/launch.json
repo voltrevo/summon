@@ -7,15 +7,15 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug executable 'csc'",
+      "name": "Debug executable 'summonc'",
       "cargo": {
         "args": [
           "build",
-          "--bin=csc",
+          "--bin=summonc",
           "--package=cli"
         ],
         "filter": {
-          "name": "csc",
+          "name": "summonc",
           "kind": "bin"
         }
       },
@@ -27,16 +27,16 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug unit tests in executable 'circuit-script'",
+      "name": "Debug unit tests in executable 'summon'",
       "cargo": {
         "args": [
           "test",
           "--no-run",
-          "--bin=circuit-script",
-          "--package=circuit-script"
+          "--bin=summon",
+          "--package=summon"
         ],
         "filter": {
-          "name": "circuit-script",
+          "name": "summon",
           "kind": "bin"
         }
       },

@@ -4,11 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "csc"
+name = "summonc"
 path = "src/main.rs"
 
 [dependencies]
-circuitscript_compiler = { path = "../compiler" }
+summon_compiler = { path = "../compiler" }
 valuescript_compiler = { git = "https://github.com/voltrevo/ValueScript", rev = "ae82029" }
 url = "2.2.1"
 serde = "1.0"

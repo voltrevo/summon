@@ -14,9 +14,9 @@
 // line, similar to test annotations in `loopAdd.ts` and `greaterThan10.ts`.
 
 export default function main(
-  // The main function has this quirky signature to tell CircuitScript to instantiate it for exactly
-  // 10 inputs. However we can implement the general algorithm by writing `impl` which simply takes
-  // an array of inputs with unspecified length.
+  // The main function has this quirky signature to tell Summon to instantiate it for exactly 10
+  // inputs. However we can implement the general algorithm by writing `impl` which simply takes an
+  // array of inputs with unspecified length.
   ballot0: number,
   ballot1: number,
   ballot2: number,
