@@ -2,7 +2,7 @@ use std::{fs, path::Path};
 
 use handle_diagnostics_cli::handle_diagnostics_cli;
 use serde_json::to_string_pretty;
-use summon_compiler::{compile, BristolCircuit, CompileOk};
+use summon_compiler::{compile, resolve_entry_path, BristolCircuit, CompileOk};
 
 mod handle_diagnostics_cli;
 
@@ -14,7 +14,9 @@ fn main() {
     std::process::exit(1);
   }
 
-  let compile_result = compile(&args[1], |path| {
+  let entry_point = resolve_entry_path(&args[1]);
+
+  let compile_result = compile(entry_point, |path| {
     fs::read_to_string(path).map_err(|e| e.to_string())
   });
 

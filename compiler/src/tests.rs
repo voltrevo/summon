@@ -2,7 +2,7 @@
 mod tests_ {
   use std::{collections::HashMap, fs, path::PathBuf};
 
-  use crate::{compile, CompileOk};
+  use crate::{compile, resolve_entry_path::resolve_entry_path, CompileOk};
 
   #[test]
   fn test_annotations() {
@@ -16,10 +16,12 @@ mod tests_ {
     {
       println!("Test {}: {:?} => {:?}", path, input, expected_output);
 
+      let path = resolve_entry_path(&path);
+
       let CompileOk {
         circuit,
         diagnostics: _,
-      } = compile(&path, |p| fs::read_to_string(p).map_err(|e| e.to_string()))
+      } = compile(path, |p| fs::read_to_string(p).map_err(|e| e.to_string()))
         .expect("Compile failed");
 
       let inputs = circuit

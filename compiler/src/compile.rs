@@ -11,7 +11,6 @@ use crate::{
   circuit_vm::CircuitVM,
   cs_function::CsFunction,
   id_generator::IdGenerator,
-  resolve_entry_path::resolve_entry_path,
   val_dynamic_downcast::val_dynamic_downcast,
 };
 
@@ -27,7 +26,7 @@ pub struct CompileErr {
 
 pub type CompileResult = Result<CompileOk, CompileErr>;
 
-pub fn compile<ReadFile>(path: &str, read_file: ReadFile) -> CompileResult
+pub fn compile<ReadFile>(path: ResolvedPath, read_file: ReadFile) -> CompileResult
 where
   ReadFile: Fn(&str) -> Result<String, String>,
 {
@@ -57,18 +56,16 @@ struct CompileArtifacts {
 }
 
 fn get_compile_artifacts<ReadFile>(
-  path: &str,
+  path: ResolvedPath,
   read_file: ReadFile,
 ) -> Result<CompileArtifacts, CompileErr>
 where
   ReadFile: Fn(&str) -> Result<String, String>,
 {
-  let entry_point = resolve_entry_path(path);
-
   let valuescript_compiler::CompileResult {
     module,
     diagnostics,
-  } = valuescript_compiler::compile(entry_point, read_file);
+  } = valuescript_compiler::compile(path, read_file);
 
   let module = match module {
     Some(module) => module,

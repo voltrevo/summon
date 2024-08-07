@@ -23,5 +23,6 @@ pub use compile::compile;
 pub use compile::CompileErr;
 pub use compile::CompileOk;
 pub use compile::CompileResult;
+pub use resolve_entry_path::resolve_entry_path;
 pub use valuescript_compiler::Diagnostic;
 pub use valuescript_compiler::DiagnosticLevel;
