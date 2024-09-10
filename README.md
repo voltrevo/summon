@@ -19,6 +19,8 @@ summonc main.ts
 
 This will generate the circuit in [bristol format](https://nigelsmart.github.io/MPC-Circuits/) at `output/circuit.txt` and a description of the inputs, outputs, and constants at `output/circuit_info.json`.
 
+You can also produce boolean circuits by adding `--boolify-width 16`. (See [boolify](https://github.com/voltrevo/boolify) for more about boolean circuits.)
+
 ## Example
 
 ```ts

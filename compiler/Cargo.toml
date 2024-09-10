@@ -13,3 +13,4 @@ num-bigint = "0.4"
 num-traits = "0.2"
 serde = "1.0"
 serde_json = "1.0"
+bristol-circuit = { git = "https://github.com/voltrevo/bristol-circuit", rev = "2a8b001" }

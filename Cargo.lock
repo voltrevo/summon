@@ -164,6 +164,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "boolify"
+version = "0.1.0"
+source = "git+https://github.com/voltrevo/boolify?rev=84d68ed#84d68ed665eb3372e9c872fe4edf753ced83bad2"
+dependencies = [
+ "bristol-circuit",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "bristol-circuit"
+version = "0.1.0"
+source = "git+https://github.com/voltrevo/bristol-circuit?rev=2a8b001#2a8b001a80ffc0370c641ccc0ed5bf5c04aea9cc"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "browserslist-rs"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -230,6 +250,8 @@ dependencies = [
 name = "cli"
 version = "0.1.0"
 dependencies = [
+ "boolify",
+ "bristol-circuit",
  "serde",
  "serde_json",
  "serde_qs",
@@ -1475,6 +1497,7 @@ dependencies = [
 name = "summon_compiler"
 version = "0.1.0"
 dependencies = [
+ "bristol-circuit",
  "num-bigint",
  "num-traits",
  "serde",

@@ -1,18 +1,30 @@
-use std::{fs, path::Path};
+use std::{
+  fs::{self, File},
+  io::BufWriter,
+  path::Path,
+};
 
+use boolify::boolify;
 use handle_diagnostics_cli::handle_diagnostics_cli;
 use serde_json::to_string_pretty;
-use summon_compiler::{compile, resolve_entry_path, BristolCircuit, CompileOk};
+use summon_compiler::{bristol_depth, compile, resolve_entry_path, CompileOk};
 
 mod handle_diagnostics_cli;
 
 fn main() {
   let args: Vec<String> = std::env::args().collect();
 
-  if args.len() != 2 {
-    eprintln!("Usage: summonc main.ts");
+  if args.len() != 2 && args.len() != 4 {
+    eprintln!("Usage: summonc main.ts [--boolify-width WIDTH]");
     std::process::exit(1);
   }
+
+  let boolify_width = if args.len() == 4 {
+    assert_eq!(args[2], "--boolify-width");
+    Some(args[3].parse::<usize>().unwrap())
+  } else {
+    None
+  };
 
   let entry_point = resolve_entry_path(&args[1]);
 
@@ -34,13 +46,6 @@ fn main() {
 
   handle_diagnostics_cli(&diagnostics);
 
-  println!(
-    "Wires: {}, Gates: {}, Depth: {}",
-    circuit.size,
-    circuit.gates.len(),
-    circuit.depth()
-  );
-
   let output_dir = Path::new("output");
 
   if output_dir.exists() {
@@ -49,11 +54,30 @@ fn main() {
 
   fs::create_dir(output_dir).unwrap();
 
-  let BristolCircuit { info, bristol } = circuit.to_bristol();
+  let mut bristol_circuit = circuit.to_bristol();
 
-  fs::write("output/circuit.txt", bristol).unwrap();
+  if let Some(boolify_width) = boolify_width {
+    bristol_circuit = boolify(&bristol_circuit, boolify_width)
+  }
+
+  println!(
+    "Wires: {}, Gates: {}, Depth: {}",
+    bristol_circuit.wire_count,
+    bristol_circuit.gates.len(),
+    bristol_depth(&bristol_circuit),
+  );
+
+  bristol_circuit
+    .write_bristol(&mut BufWriter::new(
+      File::create("output/circuit.txt").unwrap(),
+    ))
+    .unwrap();
   println!("output/circuit.txt");
 
-  fs::write("output/circuit_info.json", to_string_pretty(&info).unwrap()).unwrap();
+  fs::write(
+    "output/circuit_info.json",
+    to_string_pretty(&bristol_circuit.info).unwrap(),
+  )
+  .unwrap();
   println!("output/circuit_info.json");
 }

@@ -1,12 +1,9 @@
 use std::{cmp::max, collections::HashMap};
 
+use bristol_circuit::{BristolCircuit, CircuitInfo, ConstantInfo, Gate as BristolGate};
 use valuescript_vm::{binary_op::BinaryOp, unary_op::UnaryOp};
 
-use crate::{
-  bristol_circuit::{CircuitInfo, ConstantInfo},
-  bristol_op_strings::{to_bristol_binary_op, to_bristol_unary_op},
-  BristolCircuit,
-};
+use crate::bristol_op_strings::{to_bristol_binary_op, to_bristol_unary_op};
 
 #[derive(Default)]
 pub struct Circuit {
@@ -92,50 +89,32 @@ impl Circuit {
   }
 
   pub fn to_bristol(&self) -> BristolCircuit {
-    let mut bristol = Vec::<String>::new();
-
-    bristol.push(format!("{} {}", self.gates.len(), self.size));
-    let mut input_line = self.inputs.len().to_string();
-
-    for _ in 0..self.inputs.len() {
-      input_line.push_str(" 1");
-    }
-
-    bristol.push(input_line);
-
-    let mut output_line = self.outputs.len().to_string();
-
-    for _ in 0..self.outputs.len() {
-      output_line.push_str(" 1");
-    }
-
-    bristol.push(output_line);
-    bristol.push("".into());
+    let mut bristol_gates = Vec::<BristolGate>::new();
 
     for gate in &self.gates {
-      bristol.push(match gate {
-        Gate::Unary { op, input, output } => {
-          format!("1 1 {} {} {}", input, output, to_bristol_unary_op(*op))
-        }
+      bristol_gates.push(match gate {
+        Gate::Unary { op, input, output } => BristolGate {
+          inputs: vec![*input],
+          outputs: vec![*output],
+          op: to_bristol_unary_op(*op),
+        },
         Gate::Binary {
           op,
           left,
           right,
           output,
-        } => format!(
-          "2 1 {} {} {} {}",
-          left,
-          right,
-          output,
-          to_bristol_binary_op(*op)
-        ),
+        } => BristolGate {
+          inputs: vec![*left, *right],
+          outputs: vec![*output],
+          op: to_bristol_binary_op(*op),
+        },
       });
     }
 
-    let input_name_to_wire_index: HashMap<String, u32> = self
+    let input_name_to_wire_index: HashMap<String, usize> = self
       .inputs
       .iter()
-      .map(|(name, id)| (name.clone(), *id as u32))
+      .map(|(name, id)| (name.clone(), *id))
       .collect();
 
     let constants: HashMap<String, ConstantInfo> = self
@@ -146,25 +125,27 @@ impl Circuit {
           format!("constant_{}", value),
           ConstantInfo {
             value: value.to_string(),
-            wire_index: *id as u32,
+            wire_index: *id,
           },
         )
       })
       .collect();
 
-    let output_name_to_wire_index: HashMap<String, u32> = self
+    let output_name_to_wire_index: HashMap<String, usize> = self
       .outputs
       .iter()
-      .map(|(name, id)| (name.clone(), *id as u32))
+      .map(|(name, id)| (name.clone(), *id))
       .collect();
 
     BristolCircuit {
+      wire_count: self.size,
       info: CircuitInfo {
         input_name_to_wire_index,
         constants,
         output_name_to_wire_index,
       },
-      bristol: bristol.join("\n"),
+      io_widths: None,
+      gates: bristol_gates,
     }
   }
 }

@@ -1,5 +1,5 @@
 mod arithmetic_merge;
-mod bristol_circuit;
+mod bristol_depth;
 mod bristol_op_strings;
 mod bytecode;
 mod bytecode_decoder;
@@ -18,7 +18,7 @@ mod resolve_entry_path;
 mod tests;
 mod val_dynamic_downcast;
 
-pub use bristol_circuit::BristolCircuit;
+pub use bristol_depth::bristol_depth;
 pub use compile::compile;
 pub use compile::CompileErr;
 pub use compile::CompileOk;
