@@ -166,7 +166,7 @@ dependencies = [
 [[package]]
 name = "boolify"
 version = "0.1.0"
-source = "git+https://github.com/voltrevo/boolify?rev=84d68ed#84d68ed665eb3372e9c872fe4edf753ced83bad2"
+source = "git+https://github.com/voltrevo/boolify?rev=e9707c0#e9707c0a7613e50dc375beec67e9367c30bc57f4"
 dependencies = [
  "bristol-circuit",
  "serde",
