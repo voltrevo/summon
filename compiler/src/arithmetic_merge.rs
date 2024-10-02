@@ -156,7 +156,14 @@ fn arithmetic_merge_impl<'a>(
 
   if is_circuit_ish(left) && is_circuit_ish(right) {
     let type_ = left.typeof_();
-    assert!(right.typeof_() == type_);
+
+    assert!(
+      right.typeof_() == type_,
+      "Cannot merge {} with {}",
+      type_,
+      right.typeof_()
+    );
+
     assert!(type_ == VsType::Bool || type_ == VsType::Number);
 
     return set_type(&direct_merge(left, right), type_);
