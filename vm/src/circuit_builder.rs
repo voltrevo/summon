@@ -4,7 +4,6 @@ use std::{
 };
 
 use crate::{vs_value::Val, ValTrait};
-use num_traits::ToPrimitive;
 use serde_json::json;
 
 use crate::{
@@ -74,13 +73,7 @@ impl CircuitBuilder {
           panic!("Cannot use non-integer constant");
         }
 
-        let value = if *number < 0.0 {
-          usize::MAX - ((-number).to_usize().unwrap() - 1)
-        } else {
-          number.to_usize().unwrap()
-        };
-
-        let value = serde_json::Value::from(value);
+        let value = serde_json::Value::from(*number);
 
         if let Some(wire_id) = self.constants.get(&value) {
           return *wire_id;

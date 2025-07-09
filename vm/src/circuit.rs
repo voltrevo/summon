@@ -279,7 +279,7 @@ impl CircuitNumber for NumberOrBool {
   }
 
   fn from_json(x: &serde_json::Value) -> Self {
-    if let Some(x) = x.as_u64() {
+    if let Some(x) = x.as_f64() {
       return NumberOrBool::Number(x as usize);
     }
 
