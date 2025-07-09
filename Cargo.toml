@@ -5,7 +5,7 @@ resolver = "2"
 
 [workspace.dependencies]
 bincode = "2"
-boolify = { git = "https://github.com/voltrevo/boolify", rev = "380a815" }
+boolify = { git = "https://github.com/voltrevo/boolify", rev = "a5e5dd3" }
 bristol-circuit = { git = "https://github.com/voltrevo/bristol-circuit", rev = "10ee9c7" }
 num-bigint = "0.4"
 num-derive = "0.4"
